@@ -24,7 +24,7 @@ describe('realtime notifications', () => {
   it('supports opening and clearing notification panel', () => {
     const toggle = vi.fn(); const clear = vi.fn()
     render(<NotificationPanel open unread={0} connectionState="disconnected" notifications={[{ alertId: 'a-1', subject: 'Alert', sourceSystem: 'audit', status: 'PENDING', priority: 3 }]} onToggle={toggle} onClear={clear} />)
-    fireEvent.click(screen.getByLabelText('Notifikasi realtime'))
+    fireEvent.click(screen.getByLabelText('Realtime notifications'))
     fireEvent.click(screen.getByText('Clear'))
     expect(toggle).toHaveBeenCalledOnce()
     expect(clear).toHaveBeenCalledOnce()
