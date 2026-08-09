@@ -99,9 +99,3 @@ Informasi Proyek yang Perlu Dilengkapi
 
 Kriteria Selesai
 Aplikasi dianggap selesai ketika kebutuhan utama telah diimplementasikan, navigasi dan alur pengguna berjalan, antarmuka responsif serta dapat diakses, kondisi loading/error/data kosong ditangani, tidak ada error build, dan perilaku kritis telah diverifikasi.
-
-saya ingin menerapkan juga semua backend yang sudah saya buat di dashboard tersebut.
-buat agar structure code nya sesuai standar reactJS dan mudah dipahami oleh developer baru.
-buat agar code reusable component untuk code yang bisa digunakan kembali seperti contoh input, dropdown, table, dll
-untuk endpoint api buat lewat api gateway, biarkan api gateway yang routing ke service nya
-
