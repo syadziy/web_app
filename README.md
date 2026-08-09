@@ -11,6 +11,7 @@ npm run dev
 ```
 
 API default berada di `http://localhost:9000`. Ubah `VITE_API_BASE_URL` jika API Gateway berjalan pada alamat lain.
+Notifikasi realtime memakai `VITE_ALERT_WS_URL` dengan default `ws://localhost:9000/ws/alerts`.
 
 ## Struktur
 
@@ -20,6 +21,10 @@ API default berada di `http://localhost:9000`. Ubah `VITE_API_BASE_URL` jika API
 - `src/store`: state sesi autentikasi in-memory.
 - `src/hooks`: logika request reusable.
 - `src/layouts`: kerangka navigasi dashboard.
+- `src/services/notifications.js`: koneksi STOMP, JWT `CONNECT`, heartbeat, dan reconnect otomatis.
+
+Setelah login, header dashboard menampilkan indikator koneksi, unread counter, dan maksimal 50
+notifikasi alert terbaru. Token harus membawa permission `alert:read-notifications`.
 
 ## Verifikasi
 

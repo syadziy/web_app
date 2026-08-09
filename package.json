@@ -10,11 +10,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "react-router-dom": "latest"
+    "react-router-dom": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
     "@eslint/js": "latest",
