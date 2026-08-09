@@ -1,6 +1,6 @@
 import { Client } from '@stomp/stompjs'
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000').replace(/\/$/, '')
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:9001').replace(/\/$/, '')
 const DEFAULT_WS_URL = `${API_BASE_URL.replace(/^http/, 'ws')}/ws/alerts`
 const ALERT_WS_URL = import.meta.env.VITE_ALERT_WS_URL || DEFAULT_WS_URL
 
