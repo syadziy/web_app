@@ -34,4 +34,24 @@ npm test
 npm run build
 ```
 
+## Docker
+
+Build image dengan alamat API Gateway yang akan dipakai oleh browser:
+
+```bash
+docker build \
+  --build-arg VITE_API_BASE_URL=http://localhost:9000 \
+  --build-arg VITE_API_CLIENT_ID=operations-ui \
+  -t control-room-web:latest .
+```
+
+Jalankan container pada port `8080`:
+
+```bash
+docker run --rm -p 8080:8080 control-room-web:latest
+```
+
+Buka `http://localhost:8080`. Health check tersedia di `GET /health`. Karena Vite memasukkan
+environment variable pada waktu build, gunakan build argument yang sesuai untuk setiap environment.
+
 > API Gateway harus mengekspos route `/api/v1/auth/**` dan `/api/v1/tenants/**` agar halaman Identity dapat mengakses User Management melalui entry point yang sama.
