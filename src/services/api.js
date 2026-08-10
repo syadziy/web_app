@@ -5,8 +5,8 @@ export const identityApi = {
   registerTenant: (data) => request('/api/v1/tenants', { method: 'POST', body: data }),
   updateTokenPolicy: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/token-policy`, { method: 'PATCH', body: data }),
   users: (tenantId, signal) => request(`/api/v1/tenants/${tenantId}/users`, { signal }),
-  createUser: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/users`, { method: 'POST', body: data }),
-  assignRoles: (tenantId, userId, roleIds) => request(`/api/v1/tenants/${tenantId}/users/${userId}/roles`, { method: 'PUT', body: { roleIds } }),
+  createUser: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/users`, { method: 'POST', body: data }).then((response) => response?.data ?? response),
+  assignRoles: (tenantId, userId, roleIds) => request(`/api/v1/tenants/${tenantId}/users/${userId}/roles`, { method: 'PUT', body: { roleIds } }).then((response) => response?.data ?? response),
   roles: (tenantId, signal) => request(`/api/v1/tenants/${tenantId}/roles`, { signal }),
   createRole: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/roles`, { method: 'POST', body: data }),
   permissions: (tenantId, signal) => request(`/api/v1/tenants/${tenantId}/permissions`, { signal }),
@@ -21,6 +21,10 @@ export const schedulerApi = {
 export const alertApi = {
   create: (data) => request('/api/v1/alert', { method: 'POST', body: data }),
   dispatch: (alertId) => request(`/api/v1/alert/${alertId}/dispatch`, { method: 'POST' }),
+  recipients: (params = {}, signal) => request(`/api/v1/alert/recipients?${new URLSearchParams(params)}`, { signal }),
+  createRecipient: (data) => request('/api/v1/alert/recipients', { method: 'POST', body: data }).then((response) => response?.data ?? response),
+  updateRecipient: (id, data) => request(`/api/v1/alert/recipients/${id}`, { method: 'PUT', body: data }).then((response) => response?.data ?? response),
+  deleteRecipient: (id) => request(`/api/v1/alert/recipients/${id}`, { method: 'DELETE' }),
 }
 export const auditApi = {
   list: (params, signal) => request(`/api/v1/audit-logs?${new URLSearchParams(params)}`, { signal }),
