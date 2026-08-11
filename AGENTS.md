@@ -1,0 +1,216 @@
+# AGENTS.md
+
+## Project overview
+
+`web_app` adalah dashboard operasional React untuk mengakses `usermanagement`, `scheduler`,
+`centralized_alert`, dan `audit_log` melalui satu `api_gateway`.
+
+Stack utama:
+
+- React dan React DOM
+- React Router
+- Vite
+- React Context untuk session autentikasi dan tema
+- Fetch wrapper untuk REST API
+- STOMP WebSocket untuk notifikasi alert realtime
+- Vitest, Testing Library, ESLint, dan jsdom
+- Nginx sebagai static-file server pada runtime container
+
+Prioritas desain:
+
+- Permission-aware UI yang konsisten dengan enforcement backend dan API Gateway.
+- Tidak mengirim request API yang sudah diketahui tidak diizinkan.
+- Session dan access token hanya hidup selama tab aplikasi aktif.
+- Tampilan operasional yang responsif, mudah dipindai, dan tetap aksesibel.
+- Tidak membocorkan token, credential, atau data sensitif melalui UI, log, maupun build artifact.
+
+## Project structure
+
+```text
+src/
+├── components/             # Shared UI dan realtime notification components
+├── hooks/                  # Reusable data-loading hooks
+├── layouts/                # Application shell, navigation, and top bar
+├── pages/                  # Route-level dashboard pages
+├── services/               # REST and WebSocket clients
+├── store/                  # Auth/theme contexts, session, and permission helpers
+├── styles/                 # Global application styles
+├── test/                   # Shared test setup
+├── App.jsx                 # Routes and route authorization
+└── main.jsx                # React bootstrap
+```
+
+Gunakan struktur yang sudah ada. Jangan menambah state-management library, design system, atau
+request library baru tanpa kebutuhan project-wide yang jelas.
+
+## Development commands
+
+Jalankan perintah dari direktori `web_app`.
+
+```bash
+npm install
+npm run dev
+npm test
+npm run lint
+npm run build
+```
+
+Jalankan satu test:
+
+```bash
+npx vitest run src/store/permissions.test.js
+```
+
+## Authorization and permissions
+
+- Backend dan API Gateway adalah enforcement keamanan utama. Visibility guard frontend bukan
+  pengganti authorization server-side.
+- Ambil permission dari `session.permissions` pada response login.
+- Definisikan authority di `src/store/permissions.js`; jangan menyebarkan string permission baru
+  secara manual ke banyak komponen.
+- Gunakan `can(permission)` atau `canAny(permissions)` dari `AuthContext`.
+- Nama permission harus sama persis dengan kontrak backend, tanpa prefix `PERM_`, misalnya
+  `tenant:view`, `user:create`, dan `scheduler:manage`.
+- Terapkan permission pada seluruh lapisan UI yang relevan:
+  - sidebar navigation;
+  - overview/service cards;
+  - direct route access;
+  - tabs dan panels;
+  - create/edit/delete/dispatch/toggle buttons;
+  - modal dan form;
+  - remote data loaders dan realtime connections.
+- Jangan hanya menyembunyikan tombol. Pastikan loader atau effect tidak tetap memanggil endpoint
+  yang tidak diizinkan.
+- Jika satu workflow menjalankan beberapa endpoint, tombol hanya boleh muncul ketika semua
+  permission yang diperlukan tersedia. Contoh create user saat ini membutuhkan `user:create`,
+  `role:assign`, dan `role:view` karena user langsung ditempelkan ke role yang dipilih.
+- Pengguna yang membuka route tanpa permission harus diarahkan ke overview, bukan melihat halaman
+  yang kemudian gagal dengan 401/403.
+- Perubahan permission backend atau route gateway wajib diselaraskan dengan
+  `src/store/permissions.js`, route guard, navigation, page actions, dan focused tests.
+
+## Authentication and session
+
+- Gunakan `AuthContext`; jangan membuat sumber session kedua.
+- Normalisasi response login melalui `normalizeSession`.
+- Access token diteruskan melalui wrapper `src/services/http.js`.
+- Jangan menyimpan access token ke `localStorage`, URL, log console, DOM attribute, atau error
+  message.
+- Logout harus membersihkan token HTTP client dan session React.
+- Jangan menampilkan halaman protected sebelum session tersedia.
+- WebSocket notification hanya boleh aktif untuk session dengan
+  `alert:read-notifications`.
+
+## REST and data loading
+
+- Semua request HTTP baru harus ditambahkan ke `src/services/api.js` atau service module yang
+  setara; page tidak boleh merakit fetch implementation sendiri.
+- Gunakan API Gateway sebagai base URL. Browser tidak boleh mengakses hostname container seperti
+  `host.docker.internal` atau nama Docker service.
+- Gunakan `useRemoteList` untuk list sederhana dan berikan flag `enabled` berdasarkan permission.
+- Teruskan `AbortSignal` agar request dibatalkan ketika component unmount atau dependency berubah.
+- Tangani loading, empty, error, retry, dan success feedback secara eksplisit.
+- Jangan retry 401/403 secara otomatis. Error tersebut harus diselesaikan melalui session atau
+  permission yang benar.
+- Gunakan envelope normalization yang sudah tersedia; jangan membuat format response kedua.
+- Jangan mengirim field kosong yang mengubah arti request jika API membedakan antara absent dan
+  empty.
+
+## Components and UX
+
+- Gunakan komponen bersama dari `src/components/ui.jsx` sebelum membuat variasi baru.
+- Pertahankan pola `Panel`, `Status`, `Notice`, `DataTable`, `Field`, `Button`, dan `Modal`.
+- Semua tabel default memakai 10 baris dengan opsi 50, 100, dan 500, kecuali scheduler history
+  yang default 500 dengan opsi 1000, 1500, dan 2000.
+- Form harus memiliki label, name, validation attribute, loading state, dan feedback kegagalan.
+- Tombol aksi destruktif harus jelas dan tidak boleh dipicu tanpa interaksi pengguna.
+- Modal harus dapat ditutup, mempunyai judul yang terhubung secara aksesibel, dan tidak kehilangan
+  state tanpa alasan.
+- Gunakan Bahasa Indonesia untuk UI operasional yang sudah berbahasa Indonesia. Pertahankan istilah
+  teknis yang memang merupakan nama domain atau kontrak API.
+- Jangan membuat layout baru yang mengabaikan responsive behavior dan theme variables yang ada.
+- Ikon harus memiliki label aksesibel jika maknanya tidak disertai teks.
+
+## React guidelines
+
+- Gunakan function components dan hooks.
+- Jangan melakukan side effect saat render.
+- Jangan menonaktifkan rules of hooks.
+- Simpan state sedekat mungkin dengan consumer-nya; naikkan ke Context hanya untuk state lintas
+  halaman seperti auth atau theme.
+- Hindari duplikasi derived state. Gunakan nilai yang dihitung dari session/data jika memungkinkan.
+- Jangan menambahkan Redux Toolkit hanya untuk state lokal atau permission checks. Penambahan global
+  state library memerlukan keputusan arsitektur project-wide.
+- Pastikan callback async selalu mengembalikan loading state ke kondisi normal melalui `finally`.
+- Jangan mengabaikan race, abort, atau state update setelah unmount pada data loader.
+
+## Styling
+
+- Gunakan class naming dan CSS variables yang sudah ada di `src/styles/global.css`.
+- Jangan memasukkan style kompleks secara inline.
+- Pertahankan dukungan theme dan kontras teks/control.
+- Uji tampilan desktop dan viewport sempit untuk perubahan layout material.
+- Hindari ukuran fixed yang memotong tabel, modal, atau form pada layar kecil.
+
+## Testing
+
+Setiap perubahan perilaku membutuhkan focused test.
+
+Minimal cakupan perilaku yang harus diuji:
+
+- session response terbungkus dan tidak terbungkus;
+- permission helper untuk allow dan deny;
+- menu/route/action visibility untuk pengguna dengan dan tanpa permission;
+- data loader tidak memanggil API ketika disabled;
+- form submit success dan error untuk workflow yang berubah;
+- pagination defaults dan options;
+- realtime notification visibility dan lifecycle;
+- theme behavior untuk perubahan theme-related.
+
+Gunakan Testing Library berdasarkan perilaku pengguna dan accessible role/text. Jangan menguji
+detail implementasi internal yang tidak terlihat oleh pengguna.
+
+## Security and privacy
+
+- Jangan log JWT, password, authorization header, recipient credential, atau response sensitif.
+- Jangan menggunakan `dangerouslySetInnerHTML` untuk content API tanpa sanitization yang disetujui.
+- Jangan menganggap hidden button sebagai security control.
+- Jangan memasukkan secret ke variable Vite karena value `VITE_*` menjadi bagian bundle browser.
+- Render metadata atau JSON eksternal sebagai text, bukan executable HTML.
+- Gunakan `rel="noopener noreferrer"` untuk external link yang membuka tab baru.
+- Jangan menampilkan stack trace atau detail internal backend kepada pengguna.
+
+## Docker and runtime
+
+- Build artifact Vite disajikan oleh Nginx.
+- Runtime configuration yang perlu berubah antar-environment tidak boleh di-hardcode ke source tanpa
+  strategi injection yang terdokumentasi.
+- Browser harus memakai URL yang dapat di-resolve dari host pengguna, biasanya
+  `http://localhost:9001` untuk development lokal.
+- Perubahan frontend tidak boleh langsung dibuild menjadi image, restart container, atau dideploy.
+  Serahkan source change dan hasil test/build lokal kepada pengguna untuk diperiksa terlebih dahulu.
+
+## Before finishing any task
+
+1. Baca `git status` dan pertahankan perubahan pengguna yang tidak terkait.
+2. Petakan endpoint yang disentuh ke permission backend dan API Gateway.
+3. Pastikan menu, route, tab, action, modal, dan loader memiliki guard yang konsisten.
+4. Jalankan focused tests selama pengembangan.
+5. Jalankan `npm test`.
+6. Jalankan `npm run build`.
+7. Jalankan `npm run lint` dan laporkan warning yang masih ada.
+8. Jalankan `git diff --check`.
+9. Pastikan tidak ada token, secret, `.env`, `dist/`, atau dependency artifact yang ikut berubah.
+10. Jangan deploy frontend kecuali pengguna memintanya secara eksplisit.
+
+## Never do
+
+- Jangan deploy atau restart frontend secara otomatis setelah perubahan.
+- Jangan bypass permission dengan hardcoded role seperti `SUPERADMIN` jika authority granular sudah
+  tersedia.
+- Jangan memanggil endpoint unauthorized lalu mengandalkan 401/403 untuk menyembunyikan UI.
+- Jangan menyimpan token ke persistent browser storage.
+- Jangan menambahkan secret ke source atau bundle frontend.
+- Jangan mengubah backend contract diam-diam agar cocok dengan asumsi UI.
+- Jangan menonaktifkan test atau lint rule hanya untuk membuat pipeline berhasil.
+- Jangan commit `node_modules/`, `dist/`, `.env`, coverage output, atau credential.
