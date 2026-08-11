@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Badge, Button, DataTable, Field, Modal, Notice, Panel, Status, useNotice } from '../components/ui'
 import { useRemoteList } from '../hooks/useRemoteList'
 import { schedulerApi } from '../services/api'
+import { useAuth } from '../store/AuthContext'
+import { PERMISSIONS } from '../store/permissions'
 
 const defaultHistoryFilters = { date: '', from: '', to: '', groupId: '', taskId: '', thresholdExceeded: '', limit: '2000', offset: '0' }
 const formatDate = (date) => date ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(date)) : '—'
@@ -46,13 +48,16 @@ function SchedulerModal({ kind, form, setForm, saving, onClose, onSubmit }) {
 }
 
 export default function SchedulerPage() {
-  const [tab, setTab] = useState('history')
-  const tasks = useRemoteList((signal) => schedulerApi.tasks(signal), 'scheduler-tasks')
-  const groups = useRemoteList((signal) => schedulerApi.groups(signal), 'scheduler-groups')
-  const schedules = useRemoteList((signal) => schedulerApi.schedules(signal), 'scheduler-schedules')
+  const { can } = useAuth()
+  const canRead = can(PERMISSIONS.SCHEDULER_READ)
+  const canManage = can(PERMISSIONS.SCHEDULER_MANAGE)
+  const [tab, setTab] = useState(canRead ? 'history' : null)
+  const tasks = useRemoteList((signal) => schedulerApi.tasks(signal), 'scheduler-tasks', canRead)
+  const groups = useRemoteList((signal) => schedulerApi.groups(signal), 'scheduler-groups', canRead)
+  const schedules = useRemoteList((signal) => schedulerApi.schedules(signal), 'scheduler-schedules', canRead)
   const [historyFilters, setHistoryFilters] = useState(defaultHistoryFilters)
   const [appliedHistoryFilters, setAppliedHistoryFilters] = useState(defaultHistoryFilters)
-  const history = useRemoteList((signal) => schedulerApi.histories(historyParams(appliedHistoryFilters), signal), JSON.stringify(appliedHistoryFilters))
+  const history = useRemoteList((signal) => schedulerApi.histories(historyParams(appliedHistoryFilters), signal), JSON.stringify(appliedHistoryFilters), canRead)
   const [kind, setKind] = useState(null)
   const [saving, setSaving] = useState(false)
   const [createdTasks, setCreatedTasks] = useState([])
@@ -68,9 +73,9 @@ export default function SchedulerPage() {
 
   return <div className="page-stack">
     <Notice notice={notice.notice} onClose={notice.clear} />
-    <section className="page-heading"><div><p className="eyebrow">AUTOMATION ENGINE</p><h2>Scheduler</h2><p>Orkestrasi pekerjaan HTTP dan lacak setiap eksekusi.</p></div><div className="button-row"><Button variant="secondary" onClick={() => open('schedule')}>+ Schedule</Button><Button onClick={() => open('task')}>+ Task</Button></div></section>
+    <section className="page-heading"><div><p className="eyebrow">AUTOMATION ENGINE</p><h2>Scheduler</h2><p>Orkestrasi pekerjaan HTTP dan lacak setiap eksekusi.</p></div>{canManage && <div className="button-row"><Button variant="secondary" onClick={() => open('schedule')}>+ Schedule</Button><Button onClick={() => open('task')}>+ Task</Button></div>}</section>
     {createdTasks.length > 0 && <div className="stat-strip"><div><span>Task terakhir</span><strong>{createdTasks[0].name}</strong></div><div><span>Task ID</span><strong>{createdTasks[0].taskId?.slice(0, 8)}…</strong></div></div>}
-    <div className="section-tabs" role="tablist"><button role="tab" aria-selected={tab === 'history'} onClick={() => setTab('history')}>Scheduler history <span>{history.data.length}</span></button><button role="tab" aria-selected={tab === 'schedules'} onClick={() => setTab('schedules')}>Schedules <span>{schedules.data.length}</span></button><button role="tab" aria-selected={tab === 'tasks'} onClick={() => setTab('tasks')}>Tasks <span>{tasks.data.length}</span></button><button role="tab" aria-selected={tab === 'groups'} onClick={() => setTab('groups')}>Groups <span>{groups.data.length}</span></button></div>
+    {canRead && <div className="section-tabs" role="tablist"><button role="tab" aria-selected={tab === 'history'} onClick={() => setTab('history')}>Scheduler history <span>{history.data.length}</span></button><button role="tab" aria-selected={tab === 'schedules'} onClick={() => setTab('schedules')}>Schedules <span>{schedules.data.length}</span></button><button role="tab" aria-selected={tab === 'tasks'} onClick={() => setTab('tasks')}>Tasks <span>{tasks.data.length}</span></button><button role="tab" aria-selected={tab === 'groups'} onClick={() => setTab('groups')}>Groups <span>{groups.data.length}</span></button></div>}
     {tab === 'tasks' && <Panel title="Task list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={tasks.reload}>Refresh</Button>}>
       <Status loading={tasks.loading} error={tasks.error} empty={!tasks.data.length} onRetry={tasks.reload} />
       {!tasks.loading && !tasks.error && tasks.data.length > 0 && <DataTable rows={tasks.data} columns={taskColumns} rowKey="id" />}
@@ -88,6 +93,6 @@ export default function SchedulerPage() {
       <Status loading={history.loading} error={history.error} empty={!history.data.length} onRetry={history.reload} />
       {!history.loading && !history.error && history.data.length > 0 && <DataTable rows={history.data} columns={historyColumns} rowKey="historyId" defaultPageSize={500} pageSizeOptions={[500, 1000, 1500, 2000]} />}
     </Panel>}
-    <SchedulerModal kind={kind} form={form} setForm={setForm} saving={saving} onClose={() => setKind(null)} onSubmit={submit} />
+    {canManage && <SchedulerModal kind={kind} form={form} setForm={setForm} saving={saving} onClose={() => setKind(null)} onSubmit={submit} />}
   </div>
 }

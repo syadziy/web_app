@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Badge, Button, DataTable, Field, Modal, Notice, Panel, Status, useNotice } from '../components/ui'
 import { useRemoteList } from '../hooks/useRemoteList'
 import { identityApi } from '../services/api'
 import { useAuth } from '../store/AuthContext'
+import { PERMISSIONS } from '../store/permissions'
 
 const initialUser = { username: '', email: '', password: '', roleIds: [] }
 
@@ -23,12 +24,20 @@ function MultiSelect({ label, options, selected, onChange, emptyText }) {
 }
 
 export default function IdentityPage() {
-  const { session } = useAuth()
+  const { session, can } = useAuth()
   const tenantId = session.tenantId
-  const users = useRemoteList((signal) => identityApi.users(tenantId, signal), tenantId)
-  const roles = useRemoteList((signal) => identityApi.roles(tenantId, signal), tenantId)
-  const permissions = useRemoteList((signal) => identityApi.permissions(tenantId, signal), tenantId)
-  const [tab, setTab] = useState('users')
+  const canViewUsers = can(PERMISSIONS.USER_VIEW)
+  const canViewRoles = can(PERMISSIONS.ROLE_VIEW)
+  const canViewPermissions = can(PERMISSIONS.PERMISSION_VIEW)
+  const users = useRemoteList((signal) => identityApi.users(tenantId, signal), tenantId, canViewUsers)
+  const roles = useRemoteList((signal) => identityApi.roles(tenantId, signal), tenantId, canViewRoles)
+  const permissions = useRemoteList((signal) => identityApi.permissions(tenantId, signal), tenantId, canViewPermissions)
+  const visibleTabs = useMemo(() => [
+    (canViewUsers || can(PERMISSIONS.USER_CREATE)) && 'users',
+    (canViewRoles || can(PERMISSIONS.ROLE_CREATE) || can(PERMISSIONS.ROLE_EDIT)) && 'roles',
+    (canViewPermissions || can(PERMISSIONS.PERMISSION_CREATE)) && 'permissions',
+  ].filter(Boolean), [canViewPermissions, canViewRoles, canViewUsers, can])
+  const [tab, setTab] = useState(visibleTabs[0])
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState(initialUser)
   const [saving, setSaving] = useState(false)
@@ -39,14 +48,17 @@ export default function IdentityPage() {
     permissions: { data: permissions, title: 'Permission baru', initial: { resource: '', action: '', description: '' }, fields: [['resource', 'Resource'], ['action', 'Action'], ['description', 'Description']], create: (value) => identityApi.createPermission(tenantId, value), columns: [{ key: 'authority', label: 'Authority' }, { key: 'resource', label: 'Resource' }, { key: 'action', label: 'Action' }, { key: 'description', label: 'Description' }] },
   }
   const current = configs[tab]
+  const canCreate = tab === 'users'
+    ? can(PERMISSIONS.USER_CREATE) && can(PERMISSIONS.ROLE_ASSIGN) && canViewRoles
+    : tab === 'roles' ? can(PERMISSIONS.ROLE_CREATE) : can(PERMISSIONS.PERMISSION_CREATE)
   const openCreate = () => { setForm(current.initial); setModal(true) }
   const submit = async (event) => { event.preventDefault(); setSaving(true); try { await current.create(form); notice.success(`${current.title} berhasil dibuat.`); setModal(false); current.data.reload() } catch (error) { notice.fail(error.message) } finally { setSaving(false) } }
 
   return <div className="page-stack">
     <Notice notice={notice.notice} onClose={notice.clear} />
-    <section className="page-heading"><div><p className="eyebrow">USER MANAGEMENT</p><h2>Identity & access</h2><p>Kelola siapa yang dapat mengakses setiap layanan.</p></div><Button onClick={openCreate}>+ Tambah {tab === 'permissions' ? 'permission' : tab.slice(0, -1)}</Button></section>
+    <section className="page-heading"><div><p className="eyebrow">USER MANAGEMENT</p><h2>Identity & access</h2><p>Kelola siapa yang dapat mengakses setiap layanan.</p></div>{canCreate && <Button onClick={openCreate}>+ Tambah {tab === 'permissions' ? 'permission' : tab.slice(0, -1)}</Button>}</section>
     <div className="stat-strip"><div><span>Tenant</span><strong>{session.tenantId?.slice(0, 8)}…</strong></div><div><span>Users</span><strong>{users.data.length}</strong></div><div><span>Roles</span><strong>{roles.data.length}</strong></div><div><span>Permissions</span><strong>{permissions.data.length}</strong></div></div>
-    <Panel title="Access directory" actions={<div className="tabs" role="tablist">{Object.keys(configs).map((name) => <button key={name} role="tab" aria-selected={tab === name} onClick={() => setTab(name)}>{name}</button>)}</div>}>
+    <Panel title="Access directory" actions={<div className="tabs" role="tablist">{visibleTabs.map((name) => <button key={name} role="tab" aria-selected={tab === name} onClick={() => setTab(name)}>{name}</button>)}</div>}>
       <Status loading={current.data.loading} error={current.data.error} empty={!current.data.data.length} onRetry={current.data.reload} />
       {!current.data.loading && !current.data.error && current.data.data.length > 0 && <DataTable rows={current.data.data} columns={current.columns} rowKey={tab === 'users' ? 'userId' : tab === 'roles' ? 'roleId' : 'permissionId'} />}
     </Panel>

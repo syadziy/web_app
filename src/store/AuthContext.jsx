@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, useState } from 'react'
 import { authApi } from '../services/api'
 import { setAccessToken } from '../services/http'
 import { normalizeSession } from './session'
+import { hasAnyPermission, hasPermission } from './permissions'
 
 const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
@@ -15,7 +16,13 @@ export function AuthProvider({ children }) {
     return session
   }
   const logout = () => { setAccessToken(''); setSession(null) }
-  const value = useMemo(() => ({ session, login, logout }), [session])
+  const value = useMemo(() => ({
+    session,
+    login,
+    logout,
+    can: (permission) => hasPermission(session, permission),
+    canAny: (permissions) => hasAnyPermission(session, permissions),
+  }), [session])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 export const useAuth = () => useContext(AuthContext)

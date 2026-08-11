@@ -26,6 +26,12 @@ Notifikasi realtime memakai `VITE_ALERT_WS_URL` dengan default `ws://localhost:9
 Setelah login, header dashboard menampilkan indikator koneksi, unread counter, dan maksimal 50
 notifikasi alert terbaru. Token harus membawa permission `alert:read-notifications`.
 
+Menu, kartu overview, route halaman, tab, pemanggilan API, dan tombol aksi mengikuti permission
+dari response login. Contohnya menu tenant membutuhkan `tenant:view`, tombol tambah user
+membutuhkan `user:create` beserta `role:assign` dan `role:view`, sedangkan konfigurasi scheduler
+membutuhkan `scheduler:manage`. Pemeriksaan UI hanya menyembunyikan akses yang tidak relevan;
+backend dan API Gateway tetap menjadi enforcement keamanan utama.
+
 ## Verifikasi
 
 ```bash
