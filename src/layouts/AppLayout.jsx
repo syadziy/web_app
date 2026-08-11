@@ -4,7 +4,7 @@ import RealtimeNotifications from '../components/RealtimeNotifications'
 import ThemeSelector from '../components/ThemeSelector'
 
 const navigation = [
-  ['/', 'Overview', '⌁'], ['/identity', 'Identity', '◎'], ['/scheduler', 'Scheduler', '◷'], ['/alerts', 'Alerts', '🔔'], ['/audit', 'Audit log', '≡'],
+  ['/', 'Overview', '⌁'], ['/tenants', 'Tenants', '◇'], ['/identity', 'Identity', '◎'], ['/scheduler', 'Scheduler', '◷'], ['/alerts', 'Alerts', '🔔'], ['/audit', 'Audit log', '≡'],
 ]
 export default function AppLayout() {
   const { session, logout } = useAuth(); const location = useLocation()

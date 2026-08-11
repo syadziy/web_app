@@ -6,11 +6,20 @@ import { useAuth } from '../store/AuthContext'
 
 const initialUser = { username: '', email: '', password: '', roleIds: [] }
 
-function RolePicker({ roles, selected, onChange }) {
-  return <fieldset className="role-picker"><legend>Roles</legend>
-    {roles.map((role) => <label key={role.roleId}><input type="checkbox" checked={selected.includes(role.roleId)} onChange={(event) => onChange(event.target.checked ? [...selected, role.roleId] : selected.filter((id) => id !== role.roleId))} /><span><strong>{role.name}</strong><small>{role.description || (role.systemRole ? 'System role' : 'Custom role')}</small></span></label>)}
-    {!roles.length && <small>Belum ada role yang dapat dipilih.</small>}
-  </fieldset>
+function MultiSelect({ label, options, selected, onChange, emptyText }) {
+  const toggle = (value, checked) => onChange(checked ? [...selected, value] : selected.filter((item) => item !== value))
+  const selectedLabels = options.filter((option) => selected.includes(option.value)).map((option) => option.label)
+
+  return <label className="field multi-select-field"><span>{label}</span><details className="multi-select">
+    <summary>{selectedLabels.length ? selectedLabels.join(', ') : `Pilih ${label.toLowerCase()}`}</summary>
+    <div className="multi-select__menu">
+      {options.map((option) => <label key={option.value}>
+        <input type="checkbox" checked={selected.includes(option.value)} onChange={(event) => toggle(option.value, event.target.checked)} />
+        <span><strong>{option.label}</strong>{option.description && <small>{option.description}</small>}</span>
+      </label>)}
+      {!options.length && <small>{emptyText}</small>}
+    </div>
+  </details></label>
 }
 
 export default function IdentityPage() {
@@ -26,7 +35,7 @@ export default function IdentityPage() {
   const notice = useNotice()
   const configs = {
     users: { data: users, title: 'User baru', initial: initialUser, fields: [['username', 'Username'], ['email', 'Email', 'email'], ['password', 'Password', 'password']], create: async ({ roleIds, ...value }) => { if (!roleIds.length) throw new Error('Pilih minimal satu role.'); const user = await identityApi.createUser(tenantId, value); return identityApi.assignRoles(tenantId, user.userId, roleIds) }, columns: [{ key: 'username', label: 'User' }, { key: 'email', label: 'Email' }, { key: 'roles', label: 'Role', render: (row) => [...(row.roles || [])].join(', ') || '—' }, { key: 'enabled', label: 'Status', render: (row) => <Badge tone={row.enabled ? 'success' : 'neutral'}>{row.enabled ? 'Active' : 'Disabled'}</Badge> }] },
-    roles: { data: roles, title: 'Role baru', initial: { name: '', description: '', permissions: '' }, fields: [['name', 'Role name'], ['description', 'Description'], ['permissions', 'Permissions', 'text', 'Pisahkan authority dengan koma']], create: (value) => identityApi.createRole(tenantId, { ...value, permissions: value.permissions.split(',').map((item) => item.trim()).filter(Boolean) }), columns: [{ key: 'name', label: 'Role' }, { key: 'description', label: 'Description' }, { key: 'permissions', label: 'Permissions', render: (row) => `${row.permissions?.size ?? row.permissions?.length ?? 0} grants` }, { key: 'systemRole', label: 'Type', render: (row) => <Badge>{row.systemRole ? 'System' : 'Custom'}</Badge> }] },
+    roles: { data: roles, title: 'Role baru', initial: { name: '', description: '', permissions: [] }, fields: [['name', 'Role name'], ['description', 'Description']], create: (value) => identityApi.createRole(tenantId, value), columns: [{ key: 'name', label: 'Role' }, { key: 'description', label: 'Description' }, { key: 'permissions', label: 'Permissions', render: (row) => `${row.permissions?.size ?? row.permissions?.length ?? 0} grants` }, { key: 'systemRole', label: 'Type', render: (row) => <Badge>{row.systemRole ? 'System' : 'Custom'}</Badge> }] },
     permissions: { data: permissions, title: 'Permission baru', initial: { resource: '', action: '', description: '' }, fields: [['resource', 'Resource'], ['action', 'Action'], ['description', 'Description']], create: (value) => identityApi.createPermission(tenantId, value), columns: [{ key: 'authority', label: 'Authority' }, { key: 'resource', label: 'Resource' }, { key: 'action', label: 'Action' }, { key: 'description', label: 'Description' }] },
   }
   const current = configs[tab]
@@ -43,7 +52,8 @@ export default function IdentityPage() {
     </Panel>
     <Modal title={current.title} open={modal} onClose={() => setModal(false)}><form className="form-grid" onSubmit={submit}>
       {current.fields.map(([name, label, type = 'text', hint]) => <Field key={name} label={label} name={name} type={type} hint={hint} required={name !== 'description' && name !== 'permissions'} minLength={type === 'password' ? 12 : undefined} value={form[name]} onChange={(event) => setForm({ ...form, [name]: event.target.value })} />)}
-      {tab === 'users' && <RolePicker roles={roles.data} selected={form.roleIds || []} onChange={(roleIds) => setForm({ ...form, roleIds })} />}
+      {tab === 'users' && <MultiSelect label="Roles" options={roles.data.map((role) => ({ value: role.roleId, label: role.name, description: role.description || (role.systemRole ? 'System role' : 'Custom role') }))} selected={form.roleIds || []} onChange={(roleIds) => setForm({ ...form, roleIds })} emptyText="Belum ada role yang dapat dipilih." />}
+      {tab === 'roles' && <MultiSelect label="Permissions" options={permissions.data.map((permission) => ({ value: permission.authority, label: permission.authority, description: permission.description }))} selected={form.permissions || []} onChange={(selectedPermissions) => setForm({ ...form, permissions: selectedPermissions })} emptyText="Belum ada permission yang dapat dipilih." />}
       <div className="form-actions"><Button type="button" variant="ghost" onClick={() => setModal(false)}>Batal</Button><Button disabled={saving || (tab === 'users' && !(form.roleIds || []).length)}>{saving ? 'Menyimpan…' : 'Simpan'}</Button></div>
     </form></Modal>
   </div>

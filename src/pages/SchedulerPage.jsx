@@ -48,6 +48,9 @@ function SchedulerModal({ kind, form, setForm, saving, onClose, onSubmit }) {
 }
 
 export default function SchedulerPage() {
+  const tasks = useRemoteList((signal) => schedulerApi.tasks(signal), 'scheduler-tasks')
+  const groups = useRemoteList((signal) => schedulerApi.groups(signal), 'scheduler-groups')
+  const schedules = useRemoteList((signal) => schedulerApi.schedules(signal), 'scheduler-schedules')
   const [historyFilters, setHistoryFilters] = useState(defaultHistoryFilters)
   const [appliedHistoryFilters, setAppliedHistoryFilters] = useState(defaultHistoryFilters)
   const history = useRemoteList((signal) => schedulerApi.histories(historyParams(appliedHistoryFilters), signal), JSON.stringify(appliedHistoryFilters))
@@ -57,18 +60,33 @@ export default function SchedulerPage() {
   const [form, setForm] = useState({})
   const notice = useNotice()
   const open = (type) => { setKind(type); setForm(type === 'task' ? { name: '', method: 'GET', endpoint: '', requestBody: '', timeout: 'PT30S', threshold: 'PT5S', enabled: true } : { name: '', targetType: 'TASK', taskId: '', groupId: '', cronExpression: '0 */5 * * * *', zoneId: 'Asia/Jakarta', enabled: true }) }
-  const submit = async (event) => { event.preventDefault(); setSaving(true); try { const payload = { ...form }; if (kind === 'task') { payload.headers = {}; if (!payload.requestBody) delete payload.requestBody; const result = await schedulerApi.createTask(payload); setCreatedTasks((items) => [result, ...items]) } else { if (payload.targetType === 'TASK') delete payload.groupId; else delete payload.taskId; await schedulerApi.createSchedule(payload) } notice.success(`${kind === 'task' ? 'Task' : 'Schedule'} berhasil dibuat.`); setKind(null); history.reload() } catch (error) { notice.fail(error.message) } finally { setSaving(false) } }
-  const columns = [{ key: 'taskName', label: 'Task' }, { key: 'status', label: 'Status', render: (row) => <Badge tone={row.status === 'SUCCESS' ? 'success' : row.status === 'FAILED' ? 'error' : 'neutral'}>{row.status}</Badge> }, { key: 'startedAt', label: 'Started', render: (row) => formatDate(row.startedAt) }, { key: 'durationMs', label: 'Duration', render: (row) => `${row.durationMs} ms` }, { key: 'httpStatusCode', label: 'HTTP' }]
+  const submit = async (event) => { event.preventDefault(); setSaving(true); try { const payload = { ...form }; if (kind === 'task') { payload.headers = {}; if (!payload.requestBody) delete payload.requestBody; const result = await schedulerApi.createTask(payload); setCreatedTasks((items) => [result, ...items]); tasks.reload() } else { if (payload.targetType === 'TASK') delete payload.groupId; else delete payload.taskId; await schedulerApi.createSchedule(payload); schedules.reload() } notice.success(`${kind === 'task' ? 'Task' : 'Schedule'} berhasil dibuat.`); setKind(null); history.reload() } catch (error) { notice.fail(error.message) } finally { setSaving(false) } }
+  const historyColumns = [{ key: 'taskName', label: 'Task' }, { key: 'status', label: 'Status', render: (row) => <Badge tone={row.status === 'SUCCESS' ? 'success' : row.status === 'FAILED' ? 'error' : 'neutral'}>{row.status}</Badge> }, { key: 'startedAt', label: 'Started', render: (row) => formatDate(row.startedAt) }, { key: 'durationMs', label: 'Duration', render: (row) => `${row.durationMs} ms` }, { key: 'httpStatusCode', label: 'HTTP' }]
+  const taskColumns = [{ key: 'name', label: 'Task' }, { key: 'method', label: 'Method' }, { key: 'endpoint', label: 'Endpoint' }, { key: 'timeout', label: 'Timeout' }, { key: 'threshold', label: 'Threshold' }, { key: 'enabled', label: 'Status', render: (row) => <Badge tone={row.enabled ? 'success' : 'neutral'}>{row.enabled ? 'Active' : 'Disabled'}</Badge> }]
+  const groupColumns = [{ key: 'name', label: 'Group' }, { key: 'executionMode', label: 'Mode' }, { key: 'tasks', label: 'Tasks', render: (row) => row.tasks?.length ?? 0 }, { key: 'groups', label: 'Child groups', render: (row) => row.groups?.length ?? 0 }, { key: 'enabled', label: 'Status', render: (row) => <Badge tone={row.enabled ? 'success' : 'neutral'}>{row.enabled ? 'Active' : 'Disabled'}</Badge> }]
+  const scheduleColumns = [{ key: 'name', label: 'Schedule' }, { key: 'targetType', label: 'Target' }, { key: 'targetId', label: 'Target ID', render: (row) => row.taskId || row.groupId }, { key: 'cronExpression', label: 'Cron' }, { key: 'zoneId', label: 'Timezone' }, { key: 'nextExecutionAt', label: 'Next execution', render: (row) => formatDate(row.nextExecutionAt) }, { key: 'enabled', label: 'Status', render: (row) => <Badge tone={row.enabled ? 'success' : 'neutral'}>{row.enabled ? 'Active' : 'Disabled'}</Badge> }]
   const resetFilters = () => { setHistoryFilters(defaultHistoryFilters); setAppliedHistoryFilters(defaultHistoryFilters) }
 
   return <div className="page-stack">
     <Notice notice={notice.notice} onClose={notice.clear} />
     <section className="page-heading"><div><p className="eyebrow">AUTOMATION ENGINE</p><h2>Scheduler</h2><p>Orkestrasi pekerjaan HTTP dan lacak setiap eksekusi.</p></div><div className="button-row"><Button variant="secondary" onClick={() => open('schedule')}>+ Schedule</Button><Button onClick={() => open('task')}>+ Task</Button></div></section>
     {createdTasks.length > 0 && <div className="stat-strip"><div><span>Task terakhir</span><strong>{createdTasks[0].name}</strong></div><div><span>Task ID</span><strong>{createdTasks[0].taskId?.slice(0, 8)}…</strong></div></div>}
+    <Panel title="Task list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={tasks.reload}>Refresh</Button>}>
+      <Status loading={tasks.loading} error={tasks.error} empty={!tasks.data.length} onRetry={tasks.reload} />
+      {!tasks.loading && !tasks.error && tasks.data.length > 0 && <DataTable rows={tasks.data} columns={taskColumns} rowKey="id" />}
+    </Panel>
+    <Panel title="Task group list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={groups.reload}>Refresh</Button>}>
+      <Status loading={groups.loading} error={groups.error} empty={!groups.data.length} onRetry={groups.reload} />
+      {!groups.loading && !groups.error && groups.data.length > 0 && <DataTable rows={groups.data} columns={groupColumns} rowKey="id" />}
+    </Panel>
+    <Panel title="Schedule list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={schedules.reload}>Refresh</Button>}>
+      <Status loading={schedules.loading} error={schedules.error} empty={!schedules.data.length} onRetry={schedules.reload} />
+      {!schedules.loading && !schedules.error && schedules.data.length > 0 && <DataTable rows={schedules.data} columns={scheduleColumns} rowKey="id" />}
+    </Panel>
     <Panel title="Execution history" eyebrow={appliedHistoryFilters.date || 'FILTERABLE HISTORY'} actions={<Button variant="ghost" onClick={history.reload}>Refresh</Button>}>
       <HistoryFilters filters={historyFilters} onChange={setHistoryFilters} onApply={(event) => { event.preventDefault(); setAppliedHistoryFilters({ ...historyFilters }) }} onReset={resetFilters} />
       <Status loading={history.loading} error={history.error} empty={!history.data.length} onRetry={history.reload} />
-      {!history.loading && !history.error && history.data.length > 0 && <DataTable rows={history.data} columns={columns} rowKey="historyId" />}
+      {!history.loading && !history.error && history.data.length > 0 && <DataTable rows={history.data} columns={historyColumns} rowKey="historyId" />}
     </Panel>
     <SchedulerModal kind={kind} form={form} setForm={setForm} saving={saving} onClose={() => setKind(null)} onSubmit={submit} />
   </div>

@@ -13,15 +13,19 @@ export const identityApi = {
   createPermission: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/permissions`, { method: 'POST', body: data }),
 }
 export const schedulerApi = {
-  createTask: (data) => request('/api/v1/tasks', { method: 'POST', body: data }),
-  createGroup: (data) => request('/api/v1/task-groups', { method: 'POST', body: data }),
-  createSchedule: (data) => request('/api/v1/schedules', { method: 'POST', body: data }),
+  tasks: (signal) => request('/api/v1/tasks', { signal }),
+  groups: (signal) => request('/api/v1/task-groups', { signal }),
+  schedules: (signal) => request('/api/v1/schedules', { signal }),
+  createTask: (data) => request('/api/v1/tasks', { method: 'POST', body: data }).then((response) => response?.data ?? response),
+  createGroup: (data) => request('/api/v1/task-groups', { method: 'POST', body: data }).then((response) => response?.data ?? response),
+  createSchedule: (data) => request('/api/v1/schedules', { method: 'POST', body: data }).then((response) => response?.data ?? response),
   histories: (params, signal) => request(`/api/v1/histories?${new URLSearchParams(params)}`, { signal }),
 }
 export const alertApi = {
   create: (data) => request('/api/v1/alert', { method: 'POST', body: data }),
   dispatch: (alertId) => request(`/api/v1/alert/${alertId}/dispatch`, { method: 'POST' }),
   recipients: (params = {}, signal) => request(`/api/v1/alert/recipients?${new URLSearchParams(params)}`, { signal }),
+  deliveryHistory: (params = {}, signal) => request(`/api/v1/alert/delivery-history?${new URLSearchParams(params)}`, { signal }),
   createRecipient: (data) => request('/api/v1/alert/recipients', { method: 'POST', body: data }).then((response) => response?.data ?? response),
   updateRecipient: (id, data) => request(`/api/v1/alert/recipients/${id}`, { method: 'PUT', body: data }).then((response) => response?.data ?? response),
   deleteRecipient: (id) => request(`/api/v1/alert/recipients/${id}`, { method: 'DELETE' }),
