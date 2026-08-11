@@ -3,7 +3,7 @@ import { Badge, Button, DataTable, Field, Modal, Notice, Panel, Status, useNotic
 import { useRemoteList } from '../hooks/useRemoteList'
 import { schedulerApi } from '../services/api'
 
-const defaultHistoryFilters = { date: '', from: '', to: '', groupId: '', taskId: '', thresholdExceeded: '', limit: '50', offset: '0' }
+const defaultHistoryFilters = { date: '', from: '', to: '', groupId: '', taskId: '', thresholdExceeded: '', limit: '2000', offset: '0' }
 const formatDate = (date) => date ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(date)) : '—'
 const historyParams = (filters) => Object.fromEntries(Object.entries({
   ...filters,
@@ -20,8 +20,6 @@ function HistoryFilters({ filters, onChange, onApply, onReset }) {
     <Field label="Group ID" name="groupId" placeholder="UUID group" value={filters.groupId} onChange={(event) => update({ groupId: event.target.value, offset: '0' })} />
     <Field label="Task ID" name="taskId" placeholder="UUID task" value={filters.taskId} onChange={(event) => update({ taskId: event.target.value, offset: '0' })} />
     <Field as="select" label="Threshold exceeded" name="thresholdExceeded" options={[{ value: '', label: 'Semua' }, { value: 'true', label: 'Ya' }, { value: 'false', label: 'Tidak' }]} value={filters.thresholdExceeded} onChange={(event) => update({ thresholdExceeded: event.target.value, offset: '0' })} />
-    <Field label="Limit" name="limit" type="number" min="1" max="200" value={filters.limit} onChange={(event) => update({ limit: event.target.value })} />
-    <Field label="Offset" name="offset" type="number" min="0" value={filters.offset} onChange={(event) => update({ offset: event.target.value })} />
     <div className="filter-actions"><Button>Apply filters</Button><Button type="button" variant="ghost" onClick={onReset}>Reset</Button></div>
   </form>
 }
@@ -48,6 +46,7 @@ function SchedulerModal({ kind, form, setForm, saving, onClose, onSubmit }) {
 }
 
 export default function SchedulerPage() {
+  const [tab, setTab] = useState('history')
   const tasks = useRemoteList((signal) => schedulerApi.tasks(signal), 'scheduler-tasks')
   const groups = useRemoteList((signal) => schedulerApi.groups(signal), 'scheduler-groups')
   const schedules = useRemoteList((signal) => schedulerApi.schedules(signal), 'scheduler-schedules')
@@ -71,23 +70,24 @@ export default function SchedulerPage() {
     <Notice notice={notice.notice} onClose={notice.clear} />
     <section className="page-heading"><div><p className="eyebrow">AUTOMATION ENGINE</p><h2>Scheduler</h2><p>Orkestrasi pekerjaan HTTP dan lacak setiap eksekusi.</p></div><div className="button-row"><Button variant="secondary" onClick={() => open('schedule')}>+ Schedule</Button><Button onClick={() => open('task')}>+ Task</Button></div></section>
     {createdTasks.length > 0 && <div className="stat-strip"><div><span>Task terakhir</span><strong>{createdTasks[0].name}</strong></div><div><span>Task ID</span><strong>{createdTasks[0].taskId?.slice(0, 8)}…</strong></div></div>}
-    <Panel title="Task list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={tasks.reload}>Refresh</Button>}>
+    <div className="section-tabs" role="tablist"><button role="tab" aria-selected={tab === 'history'} onClick={() => setTab('history')}>Scheduler history <span>{history.data.length}</span></button><button role="tab" aria-selected={tab === 'schedules'} onClick={() => setTab('schedules')}>Schedules <span>{schedules.data.length}</span></button><button role="tab" aria-selected={tab === 'tasks'} onClick={() => setTab('tasks')}>Tasks <span>{tasks.data.length}</span></button><button role="tab" aria-selected={tab === 'groups'} onClick={() => setTab('groups')}>Groups <span>{groups.data.length}</span></button></div>
+    {tab === 'tasks' && <Panel title="Task list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={tasks.reload}>Refresh</Button>}>
       <Status loading={tasks.loading} error={tasks.error} empty={!tasks.data.length} onRetry={tasks.reload} />
       {!tasks.loading && !tasks.error && tasks.data.length > 0 && <DataTable rows={tasks.data} columns={taskColumns} rowKey="id" />}
-    </Panel>
-    <Panel title="Task group list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={groups.reload}>Refresh</Button>}>
+    </Panel>}
+    {tab === 'groups' && <Panel title="Task group list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={groups.reload}>Refresh</Button>}>
       <Status loading={groups.loading} error={groups.error} empty={!groups.data.length} onRetry={groups.reload} />
       {!groups.loading && !groups.error && groups.data.length > 0 && <DataTable rows={groups.data} columns={groupColumns} rowKey="id" />}
-    </Panel>
-    <Panel title="Schedule list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={schedules.reload}>Refresh</Button>}>
+    </Panel>}
+    {tab === 'schedules' && <Panel title="Schedule list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={schedules.reload}>Refresh</Button>}>
       <Status loading={schedules.loading} error={schedules.error} empty={!schedules.data.length} onRetry={schedules.reload} />
       {!schedules.loading && !schedules.error && schedules.data.length > 0 && <DataTable rows={schedules.data} columns={scheduleColumns} rowKey="id" />}
-    </Panel>
-    <Panel title="Execution history" eyebrow={appliedHistoryFilters.date || 'FILTERABLE HISTORY'} actions={<Button variant="ghost" onClick={history.reload}>Refresh</Button>}>
+    </Panel>}
+    {tab === 'history' && <Panel title="Execution history" eyebrow={appliedHistoryFilters.date || 'FILTERABLE HISTORY'} actions={<Button variant="ghost" onClick={history.reload}>Refresh</Button>}>
       <HistoryFilters filters={historyFilters} onChange={setHistoryFilters} onApply={(event) => { event.preventDefault(); setAppliedHistoryFilters({ ...historyFilters }) }} onReset={resetFilters} />
       <Status loading={history.loading} error={history.error} empty={!history.data.length} onRetry={history.reload} />
-      {!history.loading && !history.error && history.data.length > 0 && <DataTable rows={history.data} columns={historyColumns} rowKey="historyId" />}
-    </Panel>
+      {!history.loading && !history.error && history.data.length > 0 && <DataTable rows={history.data} columns={historyColumns} rowKey="historyId" defaultPageSize={500} pageSizeOptions={[500, 1000, 1500, 2000]} />}
+    </Panel>}
     <SchedulerModal kind={kind} form={form} setForm={setForm} saving={saving} onClose={() => setKind(null)} onSubmit={submit} />
   </div>
 }

@@ -3,6 +3,7 @@ import { request } from './http'
 export const authApi = { login: (data) => request('/api/v1/auth/login', { method: 'POST', body: data }) }
 export const identityApi = {
   registerTenant: (data) => request('/api/v1/tenants', { method: 'POST', body: data }),
+  tenants: (signal) => request('/api/v1/tenants', { signal }),
   updateTokenPolicy: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/token-policy`, { method: 'PATCH', body: data }),
   users: (tenantId, signal) => request(`/api/v1/tenants/${tenantId}/users`, { signal }),
   createUser: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/users`, { method: 'POST', body: data }).then((response) => response?.data ?? response),
