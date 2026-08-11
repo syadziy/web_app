@@ -3,20 +3,20 @@ import { request } from './http'
 export const authApi = { login: (data) => request('/api/v1/auth/login', { method: 'POST', body: data }) }
 export const identityApi = {
   registerTenant: (data) => request('/api/v1/tenants', { method: 'POST', body: data }),
-  tenants: (signal) => request('/api/v1/tenants', { signal }),
+  tenants: (params, signal) => request(`/api/v1/tenants?${new URLSearchParams(params)}`, { signal }),
   updateTokenPolicy: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/token-policy`, { method: 'PATCH', body: data }),
-  users: (tenantId, signal) => request(`/api/v1/tenants/${tenantId}/users`, { signal }),
+  users: (tenantId, params, signal) => request(`/api/v1/tenants/${tenantId}/users?${new URLSearchParams(params)}`, { signal }),
   createUser: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/users`, { method: 'POST', body: data }).then((response) => response?.data ?? response),
   assignRoles: (tenantId, userId, roleIds) => request(`/api/v1/tenants/${tenantId}/users/${userId}/roles`, { method: 'PUT', body: { roleIds } }).then((response) => response?.data ?? response),
-  roles: (tenantId, signal) => request(`/api/v1/tenants/${tenantId}/roles`, { signal }),
+  roles: (tenantId, params, signal) => request(`/api/v1/tenants/${tenantId}/roles?${new URLSearchParams(params)}`, { signal }),
   createRole: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/roles`, { method: 'POST', body: data }),
-  permissions: (tenantId, signal) => request(`/api/v1/tenants/${tenantId}/permissions`, { signal }),
+  permissions: (tenantId, params, signal) => request(`/api/v1/tenants/${tenantId}/permissions?${new URLSearchParams(params)}`, { signal }),
   createPermission: (tenantId, data) => request(`/api/v1/tenants/${tenantId}/permissions`, { method: 'POST', body: data }),
 }
 export const schedulerApi = {
-  tasks: (signal) => request('/api/v1/tasks', { signal }),
-  groups: (signal) => request('/api/v1/task-groups', { signal }),
-  schedules: (signal) => request('/api/v1/schedules', { signal }),
+  tasks: (params, signal) => request(`/api/v1/tasks?${new URLSearchParams(params)}`, { signal }),
+  groups: (params, signal) => request(`/api/v1/task-groups?${new URLSearchParams(params)}`, { signal }),
+  schedules: (params, signal) => request(`/api/v1/schedules?${new URLSearchParams(params)}`, { signal }),
   createTask: (data) => request('/api/v1/tasks', { method: 'POST', body: data }).then((response) => response?.data ?? response),
   createGroup: (data) => request('/api/v1/task-groups', { method: 'POST', body: data }).then((response) => response?.data ?? response),
   createSchedule: (data) => request('/api/v1/schedules', { method: 'POST', body: data }).then((response) => response?.data ?? response),

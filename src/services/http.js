@@ -25,8 +25,13 @@ export async function request(path, options = {}) {
   })
   const contentType = response.headers.get('content-type') || ''
   const payload = contentType.includes('application/json') ? await response.json() : await response.text()
-  if (!response.ok) throw new ApiError('Permintaan tidak dapat diproses. Silakan periksa data dan coba lagi.', response.status, payload)
+  if (!response.ok) throw new ApiError('The request could not be completed. Check the submitted data and try again.', response.status, payload)
   return payload
 }
 
 export const listFrom = (payload) => Array.isArray(payload) ? payload : payload?.content || payload?.items || payload?.data || []
+export const pagingFrom = (payload, limit, offset, rowCount) => {
+  const paging = payload?.paging || payload?.page || {}
+  const total = Number(paging.total ?? paging.totalElements ?? payload?.total ?? payload?.totalElements)
+  return { limit, offset, total: Number.isFinite(total) ? total : offset + rowCount + (rowCount === limit ? 1 : 0) }
+}

@@ -1,0 +1,21 @@
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { useRemoteList } from './useRemoteList'
+
+describe('useRemoteList pagination', () => {
+  it('loads a new server page whenever limit or offset changes', async () => {
+    const loader = vi.fn((signal, page) => Promise.resolve({
+      data: [{ id: `${page.offset}` }],
+      paging: { total: 25 },
+    }))
+    const { result } = renderHook(() => useRemoteList(loader, 'items', true, {
+      defaultLimit: 10,
+      options: [10, 50, 100, 500],
+    }))
+
+    await waitFor(() => expect(loader).toHaveBeenCalledWith(expect.any(AbortSignal), { limit: 10, offset: 0 }))
+    act(() => result.current.pagination.onChange({ limit: 10, offset: 10 }))
+    await waitFor(() => expect(loader).toHaveBeenLastCalledWith(expect.any(AbortSignal), { limit: 10, offset: 10 }))
+    expect(result.current.data).toEqual([{ id: '10' }])
+  })
+})

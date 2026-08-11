@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { listFrom } from '../services/http'
+import { listFrom, pagingFrom } from '../services/http'
 
-export function useRemoteList(loader, dependencyKey = 'default', enabled = true) {
+export function useRemoteList(loader, dependencyKey = 'default', enabled = true, paginationConfig) {
+  const [paginationState, setPaginationState] = useState(() => ({ limit: paginationConfig?.defaultLimit || 10, offset: 0 }))
   const [state, setState] = useState({ data: [], loading: enabled, error: '' })
   const loaderRef = useRef(loader)
   loaderRef.current = loader
@@ -11,10 +12,19 @@ export function useRemoteList(loader, dependencyKey = 'default', enabled = true)
       return Promise.resolve()
     }
     setState((current) => ({ ...current, loading: true, error: '' }))
-    return loaderRef.current(signal).then((payload) => setState({ data: listFrom(payload), loading: false, error: '' })).catch((error) => {
+    return loaderRef.current(signal, paginationState).then((payload) => {
+      const data = listFrom(payload)
+      setState({ data, paging: pagingFrom(payload, paginationState.limit, paginationState.offset, data.length), loading: false, error: '' })
+    }).catch((error) => {
       if (error.name !== 'AbortError') setState({ data: [], loading: false, error: error.message })
     })
-  }, [enabled])
+  }, [enabled, paginationState])
   useEffect(() => { const controller = new AbortController(); load(controller.signal); return () => controller.abort() }, [load, dependencyKey])
-  return { ...state, reload: () => load() }
+  const pagination = paginationConfig ? {
+    ...paginationState,
+    total: state.paging?.total ?? 0,
+    options: paginationConfig.options,
+    onChange: (next) => setPaginationState(next),
+  } : undefined
+  return { ...state, pagination, reload: () => load() }
 }

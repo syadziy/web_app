@@ -1,10 +1,12 @@
 import { themes, useTheme } from '../store/ThemeContext'
+import { useLanguage } from '../store/LanguageContext'
 
 export default function ThemeSelector() {
   const { theme, setTheme } = useTheme()
+  const { t } = useLanguage()
   const selectedTheme = themes[theme]
 
-  return <label className="theme-selector" title="Pilih color palette">
+  return <label className="theme-selector" title={t('appearance')}>
     <span className="theme-selector__swatches" aria-hidden="true">
       {selectedTheme.colors.map((color) => <i key={color} style={{ background: color }} />)}
     </span>

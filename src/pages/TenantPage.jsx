@@ -16,7 +16,7 @@ const initialForm = {
 export default function TenantPage() {
   const { session } = useAuth()
   const canListTenants = session?.permissions?.includes('tenant:view')
-  const tenants = useRemoteList((signal) => canListTenants ? identityApi.tenants(signal) : Promise.resolve([]), canListTenants)
+  const tenants = useRemoteList((signal, page) => canListTenants ? identityApi.tenants(page, signal) : Promise.resolve([]), canListTenants, true, { defaultLimit: 10, options: [10, 50, 100, 500] })
   const [tab, setTab] = useState(canListTenants ? 'list' : 'register')
   const [form, setForm] = useState(initialForm)
   const [saving, setSaving] = useState(false)
@@ -55,7 +55,7 @@ export default function TenantPage() {
     {canListTenants && <div className="section-tabs" role="tablist"><button role="tab" aria-selected={tab === 'list'} onClick={() => setTab('list')}>Tenant list <span>{tenants.data.length}</span></button><button role="tab" aria-selected={tab === 'register'} onClick={() => setTab('register')}>Registrasi tenant</button></div>}
     {tab === 'list' && canListTenants ? <Panel title="Tenant directory" eyebrow="AUTHORIZED TENANTS" actions={<Button variant="ghost" onClick={tenants.reload}>Refresh</Button>}>
       <Status loading={tenants.loading} error={tenants.error} empty={!tenants.data.length} onRetry={tenants.reload} />
-      {!tenants.loading && !tenants.error && tenants.data.length > 0 && <DataTable rows={tenants.data} columns={tenantColumns} rowKey="tenantId" />}
+      {!tenants.loading && !tenants.error && tenants.data.length > 0 && <DataTable rows={tenants.data} columns={tenantColumns} rowKey="tenantId" pagination={tenants.pagination} />}
     </Panel> : <div className="tenant-onboarding">
       <Panel title="Tenant baru" eyebrow="ONBOARDING" className="tenant-form-panel">
         <form className="tenant-form" onSubmit={submit}>

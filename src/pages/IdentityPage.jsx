@@ -29,9 +29,10 @@ export default function IdentityPage() {
   const canViewUsers = can(PERMISSIONS.USER_VIEW)
   const canViewRoles = can(PERMISSIONS.ROLE_VIEW)
   const canViewPermissions = can(PERMISSIONS.PERMISSION_VIEW)
-  const users = useRemoteList((signal) => identityApi.users(tenantId, signal), tenantId, canViewUsers)
-  const roles = useRemoteList((signal) => identityApi.roles(tenantId, signal), tenantId, canViewRoles)
-  const permissions = useRemoteList((signal) => identityApi.permissions(tenantId, signal), tenantId, canViewPermissions)
+  const pagination = { defaultLimit: 10, options: [10, 50, 100, 500] }
+  const users = useRemoteList((signal, page) => identityApi.users(tenantId, page, signal), tenantId, canViewUsers, pagination)
+  const roles = useRemoteList((signal, page) => identityApi.roles(tenantId, page, signal), tenantId, canViewRoles, pagination)
+  const permissions = useRemoteList((signal, page) => identityApi.permissions(tenantId, page, signal), tenantId, canViewPermissions, pagination)
   const visibleTabs = useMemo(() => [
     (canViewUsers || can(PERMISSIONS.USER_CREATE)) && 'users',
     (canViewRoles || can(PERMISSIONS.ROLE_CREATE) || can(PERMISSIONS.ROLE_EDIT)) && 'roles',
@@ -60,7 +61,7 @@ export default function IdentityPage() {
     <div className="stat-strip"><div><span>Tenant</span><strong>{session.tenantId?.slice(0, 8)}…</strong></div><div><span>Users</span><strong>{users.data.length}</strong></div><div><span>Roles</span><strong>{roles.data.length}</strong></div><div><span>Permissions</span><strong>{permissions.data.length}</strong></div></div>
     <Panel title="Access directory" actions={<div className="tabs" role="tablist">{visibleTabs.map((name) => <button key={name} role="tab" aria-selected={tab === name} onClick={() => setTab(name)}>{name}</button>)}</div>}>
       <Status loading={current.data.loading} error={current.data.error} empty={!current.data.data.length} onRetry={current.data.reload} />
-      {!current.data.loading && !current.data.error && current.data.data.length > 0 && <DataTable rows={current.data.data} columns={current.columns} rowKey={tab === 'users' ? 'userId' : tab === 'roles' ? 'roleId' : 'permissionId'} />}
+      {!current.data.loading && !current.data.error && current.data.data.length > 0 && <DataTable rows={current.data.data} columns={current.columns} rowKey={tab === 'users' ? 'userId' : tab === 'roles' ? 'roleId' : 'permissionId'} pagination={current.data.pagination} />}
     </Panel>
     <Modal title={current.title} open={modal} onClose={() => setModal(false)}><form className="form-grid" onSubmit={submit}>
       {tab === 'users' && <Field label="Tenant ID" name="tenantId" value={tenantId} readOnly hint="User akan dibuat pada tenant dari sesi login saat ini." />}

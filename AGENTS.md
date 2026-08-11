@@ -10,7 +10,7 @@ Stack utama:
 - React dan React DOM
 - React Router
 - Vite
-- React Context untuk session autentikasi dan tema
+- React Context untuk session autentikasi, tema, dan bahasa
 - Fetch wrapper untuk REST API
 - STOMP WebSocket untuk notifikasi alert realtime
 - Vitest, Testing Library, ESLint, dan jsdom
@@ -22,6 +22,7 @@ Prioritas desain:
 - Tidak mengirim request API yang sudah diketahui tidak diizinkan.
 - Session dan access token hanya hidup selama tab aplikasi aktif.
 - Tampilan operasional yang responsif, mudah dipindai, dan tetap aksesibel.
+- English sebagai bahasa default dengan terjemahan Bahasa Indonesia yang konsisten.
 - Tidak membocorkan token, credential, atau data sensitif melalui UI, log, maupun build artifact.
 
 ## Project structure
@@ -108,6 +109,14 @@ npx vitest run src/store/permissions.test.js
 - Gunakan API Gateway sebagai base URL. Browser tidak boleh mengakses hostname container seperti
   `host.docker.internal` atau nama Docker service.
 - Gunakan `useRemoteList` untuk list sederhana dan berikan flag `enabled` berdasarkan permission.
+- Pagination list harus server-side. Setiap Next, Previous, dan perubahan page size harus memanggil
+  endpoint kembali dengan `limit` dan `offset`; jangan mengambil seluruh data lalu memotongnya di
+  browser.
+- Teruskan object `pagination` dari `useRemoteList` ke `DataTable` secara eksplisit.
+- Reset `offset` ke `0` ketika filter atau query list berubah.
+- Gunakan metadata `paging.total` dari response backend. Jika endpoint belum menyediakan total,
+  dokumentasikan keterbatasannya dan selaraskan kontrak backend; jangan menyamarkan client-side
+  pagination sebagai server-side pagination.
 - Teruskan `AbortSignal` agar request dibatalkan ketika component unmount atau dependency berubah.
 - Tangani loading, empty, error, retry, dan success feedback secara eksplisit.
 - Jangan retry 401/403 secara otomatis. Error tersebut harus diselesaikan melalui session atau
@@ -126,8 +135,14 @@ npx vitest run src/store/permissions.test.js
 - Tombol aksi destruktif harus jelas dan tidak boleh dipicu tanpa interaksi pengguna.
 - Modal harus dapat ditutup, mempunyai judul yang terhubung secara aksesibel, dan tidak kehilangan
   state tanpa alasan.
-- Gunakan Bahasa Indonesia untuk UI operasional yang sudah berbahasa Indonesia. Pertahankan istilah
-  teknis yang memang merupakan nama domain atau kontrak API.
+- English adalah bahasa default. Semua teks UI baru harus memiliki terjemahan English dan Bahasa
+  Indonesia melalui `LanguageContext`; jangan menambah string bilingual yang tersebar langsung di
+  component.
+- Gunakan `useLanguage()` dan `t(key)` untuk label, tombol, empty state, filter, serta feedback.
+  Gunakan locale `en-US` atau `id-ID` sesuai bahasa aktif untuk tanggal dan angka.
+- Tempatkan pilihan bahasa di samping pilihan tema pada application shell dan halaman login.
+- Preferensi bahasa boleh disimpan di `localStorage`, tetapi access token tetap hanya boleh hidup
+  selama tab aktif.
 - Jangan membuat layout baru yang mengabaikan responsive behavior dan theme variables yang ada.
 - Ikon harus memiliki label aksesibel jika maknanya tidak disertai teks.
 
@@ -164,6 +179,9 @@ Minimal cakupan perilaku yang harus diuji:
 - data loader tidak memanggil API ketika disabled;
 - form submit success dan error untuk workflow yang berubah;
 - pagination defaults dan options;
+- perubahan halaman memanggil loader kembali dengan pasangan `limit` dan `offset` yang benar;
+- English menjadi bahasa default dan pergantian ke Bahasa Indonesia tersimpan serta memperbarui
+  atribut `lang` pada document;
 - realtime notification visibility dan lifecycle;
 - theme behavior untuk perubahan theme-related.
 

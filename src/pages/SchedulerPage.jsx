@@ -5,7 +5,7 @@ import { schedulerApi } from '../services/api'
 import { useAuth } from '../store/AuthContext'
 import { PERMISSIONS } from '../store/permissions'
 
-const defaultHistoryFilters = { date: '', from: '', to: '', groupId: '', taskId: '', thresholdExceeded: '', limit: '2000', offset: '0' }
+const defaultHistoryFilters = { date: '', from: '', to: '', groupId: '', taskId: '', thresholdExceeded: '' }
 const formatDate = (date) => date ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(date)) : '—'
 const historyParams = (filters) => Object.fromEntries(Object.entries({
   ...filters,
@@ -52,12 +52,13 @@ export default function SchedulerPage() {
   const canRead = can(PERMISSIONS.SCHEDULER_READ)
   const canManage = can(PERMISSIONS.SCHEDULER_MANAGE)
   const [tab, setTab] = useState(canRead ? 'history' : null)
-  const tasks = useRemoteList((signal) => schedulerApi.tasks(signal), 'scheduler-tasks', canRead)
-  const groups = useRemoteList((signal) => schedulerApi.groups(signal), 'scheduler-groups', canRead)
-  const schedules = useRemoteList((signal) => schedulerApi.schedules(signal), 'scheduler-schedules', canRead)
+  const listPagination = { defaultLimit: 10, options: [10, 50, 100, 500] }
+  const tasks = useRemoteList((signal, page) => schedulerApi.tasks(page, signal), 'scheduler-tasks', canRead, listPagination)
+  const groups = useRemoteList((signal, page) => schedulerApi.groups(page, signal), 'scheduler-groups', canRead, listPagination)
+  const schedules = useRemoteList((signal, page) => schedulerApi.schedules(page, signal), 'scheduler-schedules', canRead, listPagination)
   const [historyFilters, setHistoryFilters] = useState(defaultHistoryFilters)
   const [appliedHistoryFilters, setAppliedHistoryFilters] = useState(defaultHistoryFilters)
-  const history = useRemoteList((signal) => schedulerApi.histories(historyParams(appliedHistoryFilters), signal), JSON.stringify(appliedHistoryFilters), canRead)
+  const history = useRemoteList((signal, page) => schedulerApi.histories({ ...historyParams(appliedHistoryFilters), ...page }, signal), JSON.stringify(appliedHistoryFilters), canRead, { defaultLimit: 500, options: [500, 1000, 1500, 2000] })
   const [kind, setKind] = useState(null)
   const [saving, setSaving] = useState(false)
   const [createdTasks, setCreatedTasks] = useState([])
@@ -78,20 +79,20 @@ export default function SchedulerPage() {
     {canRead && <div className="section-tabs" role="tablist"><button role="tab" aria-selected={tab === 'history'} onClick={() => setTab('history')}>Scheduler history <span>{history.data.length}</span></button><button role="tab" aria-selected={tab === 'schedules'} onClick={() => setTab('schedules')}>Schedules <span>{schedules.data.length}</span></button><button role="tab" aria-selected={tab === 'tasks'} onClick={() => setTab('tasks')}>Tasks <span>{tasks.data.length}</span></button><button role="tab" aria-selected={tab === 'groups'} onClick={() => setTab('groups')}>Groups <span>{groups.data.length}</span></button></div>}
     {tab === 'tasks' && <Panel title="Task list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={tasks.reload}>Refresh</Button>}>
       <Status loading={tasks.loading} error={tasks.error} empty={!tasks.data.length} onRetry={tasks.reload} />
-      {!tasks.loading && !tasks.error && tasks.data.length > 0 && <DataTable rows={tasks.data} columns={taskColumns} rowKey="id" />}
+      {!tasks.loading && !tasks.error && tasks.data.length > 0 && <DataTable rows={tasks.data} columns={taskColumns} rowKey="id" pagination={tasks.pagination} />}
     </Panel>}
     {tab === 'groups' && <Panel title="Task group list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={groups.reload}>Refresh</Button>}>
       <Status loading={groups.loading} error={groups.error} empty={!groups.data.length} onRetry={groups.reload} />
-      {!groups.loading && !groups.error && groups.data.length > 0 && <DataTable rows={groups.data} columns={groupColumns} rowKey="id" />}
+      {!groups.loading && !groups.error && groups.data.length > 0 && <DataTable rows={groups.data} columns={groupColumns} rowKey="id" pagination={groups.pagination} />}
     </Panel>}
     {tab === 'schedules' && <Panel title="Schedule list" eyebrow="CONFIGURATION" actions={<Button variant="ghost" onClick={schedules.reload}>Refresh</Button>}>
       <Status loading={schedules.loading} error={schedules.error} empty={!schedules.data.length} onRetry={schedules.reload} />
-      {!schedules.loading && !schedules.error && schedules.data.length > 0 && <DataTable rows={schedules.data} columns={scheduleColumns} rowKey="id" />}
+      {!schedules.loading && !schedules.error && schedules.data.length > 0 && <DataTable rows={schedules.data} columns={scheduleColumns} rowKey="id" pagination={schedules.pagination} />}
     </Panel>}
     {tab === 'history' && <Panel title="Execution history" eyebrow={appliedHistoryFilters.date || 'FILTERABLE HISTORY'} actions={<Button variant="ghost" onClick={history.reload}>Refresh</Button>}>
       <HistoryFilters filters={historyFilters} onChange={setHistoryFilters} onApply={(event) => { event.preventDefault(); setAppliedHistoryFilters({ ...historyFilters }) }} onReset={resetFilters} />
       <Status loading={history.loading} error={history.error} empty={!history.data.length} onRetry={history.reload} />
-      {!history.loading && !history.error && history.data.length > 0 && <DataTable rows={history.data} columns={historyColumns} rowKey="historyId" defaultPageSize={500} pageSizeOptions={[500, 1000, 1500, 2000]} />}
+      {!history.loading && !history.error && history.data.length > 0 && <DataTable rows={history.data} columns={historyColumns} rowKey="historyId" pagination={history.pagination} />}
     </Panel>}
     {canManage && <SchedulerModal kind={kind} form={form} setForm={setForm} saving={saving} onClose={() => setKind(null)} onSubmit={submit} />}
   </div>
