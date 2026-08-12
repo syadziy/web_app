@@ -141,6 +141,8 @@ npx vitest run src/store/permissions.test.js
 - Pertahankan pola `Panel`, `Status`, `Notice`, `DataTable`, `Field`, `Button`, dan `Modal`.
 - Semua tabel default memakai 10 baris dengan opsi 50, 100, dan 500, kecuali scheduler history
   yang default 500 dengan opsi 1000, 1500, dan 2000.
+- `DataTable` wajib mempertahankan horizontal scroll ketika jumlah/lebar kolom melebihi panel.
+  Area tabel harus keyboard-focusable dan pagination tetap berada di luar area horizontal scroll.
 - Form harus memiliki label, name, validation attribute, loading state, dan feedback kegagalan.
 - Tombol aksi destruktif harus jelas dan tidak boleh dipicu tanpa interaksi pengguna.
 - Modal harus dapat ditutup, mempunyai judul yang terhubung secara aksesibel, dan tidak kehilangan
