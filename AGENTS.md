@@ -114,9 +114,11 @@ npx vitest run src/store/permissions.test.js
   browser.
 - Teruskan object `pagination` dari `useRemoteList` ke `DataTable` secara eksplisit.
 - Reset `offset` ke `0` ketika filter atau query list berubah.
-- Gunakan metadata `paging.total` dari response backend. Jika endpoint belum menyediakan total,
-  dokumentasikan keterbatasannya dan selaraskan kontrak backend; jangan menyamarkan client-side
-  pagination sebagai server-side pagination.
+- Gunakan `paging.total_record` dari response backend sebagai total authoritative. Normalizer boleh
+  mempertahankan fallback format lama, tetapi jangan mengganti total dengan panjang data page aktif.
+- `DataTable` menampilkan rentang `offset + 1` sampai `min(offset + rows.length, total_record)` dan
+  jumlah halaman `max(1, ceil(total_record / limit))`. Tombol Next dinonaktifkan hanya ketika akhir
+  page telah mencapai `total_record`.
 - Teruskan `AbortSignal` agar request dibatalkan ketika component unmount atau dependency berubah.
 - Tangani loading, empty, error, retry, dan success feedback secara eksplisit.
 - Jangan retry 401/403 secara otomatis. Error tersebut harus diselesaikan melalui session atau
@@ -128,6 +130,8 @@ npx vitest run src/store/permissions.test.js
 ## Components and UX
 
 - Gunakan komponen bersama dari `src/components/ui.jsx` sebelum membuat variasi baru.
+- Semua icon aplikasi wajib memakai komponen `MaterialIcon` dan nama ligature Material Icons yang
+  tersedia. Jangan memakai emoji, karakter Unicode dekoratif, atau library icon lain sebagai icon UI.
 - Pertahankan pola `Panel`, `Status`, `Notice`, `DataTable`, `Field`, `Button`, dan `Modal`.
 - Semua tabel default memakai 10 baris dengan opsi 50, 100, dan 500, kecuali scheduler history
   yang default 500 dengan opsi 1000, 1500, dan 2000.
@@ -145,6 +149,17 @@ npx vitest run src/store/permissions.test.js
   selama tab aktif.
 - Jangan membuat layout baru yang mengabaikan responsive behavior dan theme variables yang ada.
 - Ikon harus memiliki label aksesibel jika maknanya tidak disertai teks.
+
+## Audit and gateway log presentation
+
+- Halaman Audit menampilkan Service dari field `resourceType`; jangan mengambil Service dari
+  `sourceSystem`, action, atau metadata permission.
+- Halaman Audit menampilkan Endpoint dari metadata `httpMethod` dan `httpPath` dalam format
+  `<METHOD> <PATH>`. Gunakan placeholder netral untuk event historis yang belum memiliki metadata.
+- Jangan menyimpulkan endpoint hanya dari action. Recipient configuration dan delivery history
+  harus tetap dapat dibedakan walaupun berasal dari service yang sama.
+- Halaman Gateway Logs mengambil data dari `/api/v1/gateway-logs` melalui API Gateway dan hanya
+  tersedia bagi pengguna dengan permission `audit:read`.
 
 ## React guidelines
 
@@ -179,6 +194,8 @@ Minimal cakupan perilaku yang harus diuji:
 - data loader tidak memanggil API ketika disabled;
 - form submit success dan error untuk workflow yang berubah;
 - pagination defaults dan options;
+- pagination memakai `paging.total_record` untuk label Showing dan total halaman;
+- rendering Service dan Endpoint audit dari field kontrak yang benar;
 - perubahan halaman memanggil loader kembali dengan pasangan `limit` dan `offset` yang benar;
 - English menjadi bahasa default dan pergantian ke Bahasa Indonesia tersimpan serta memperbarui
   atribut `lang` pada document;
