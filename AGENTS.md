@@ -153,6 +153,8 @@ npx vitest run src/store/permissions.test.js
 - Gunakan `useLanguage()` dan `t(key)` untuk label, tombol, empty state, filter, serta feedback.
   Gunakan locale `en-US` atau `id-ID` sesuai bahasa aktif untuk tanggal dan angka.
 - Tempatkan pilihan bahasa di samping pilihan tema pada application shell dan halaman login.
+- Pada application header mobile, gabungkan pilihan tema dan bahasa dalam popup di bawah tombol
+  settings agar topbar tidak penuh. Jangan menerapkan pola popup ini pada halaman login.
 - Preferensi bahasa boleh disimpan di `localStorage`, tetapi access token tetap hanya boleh hidup
   selama tab aktif.
 - Jangan membuat layout baru yang mengabaikan responsive behavior dan theme variables yang ada.
