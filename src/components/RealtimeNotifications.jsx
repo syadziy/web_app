@@ -1,33 +1,28 @@
 import { useState } from 'react'
 import { useAlertNotifications } from '../hooks/useAlertNotifications'
 import { MaterialIcon } from './ui'
+import { useLanguage } from '../store/LanguageContext'
 
-const connectionLabel = {
-  connected: 'Realtime connected',
-  connecting: 'Connecting realtime',
-  disconnected: 'Realtime disconnected',
-  error: 'Realtime unavailable',
-}
-
-function formatTime(value) {
+function formatTime(value, language) {
   if (!value) return '—'
-  return new Intl.DateTimeFormat('id-ID', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(value))
+  return new Intl.DateTimeFormat(language === 'id' ? 'id-ID' : 'en-US', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(value))
 }
 
 export function NotificationPanel({ notifications, unread, connectionState, open, onToggle, onClear }) {
+  const { language, t } = useLanguage()
   return <div className="realtime-notifications">
-    <button className="notification-trigger" onClick={onToggle} aria-label="Realtime notifications" aria-expanded={open}>
+    <button className="notification-trigger" onClick={onToggle} aria-label={t('realtimeNotifications')} aria-expanded={open}>
       <MaterialIcon name="notifications" />
       {unread > 0 && <strong>{unread > 99 ? '99+' : unread}</strong>}
     </button>
-    {open && <section className="notification-panel" aria-label="Realtime notification list">
-      <header><div><span className={`connection-dot connection-dot--${connectionState}`} /><small>{connectionLabel[connectionState]}</small><h2>Notifications</h2></div>{notifications.length > 0 && <button onClick={onClear}>Clear</button>}</header>
+    {open && <section className="notification-panel" aria-label={t('realtimeNotificationList')}>
+      <header><div><span className={`connection-dot connection-dot--${connectionState}`} /><small>{t(`realtime${connectionState.charAt(0).toUpperCase()}${connectionState.slice(1)}`)}</small><h2>{t('notifications')}</h2></div>{notifications.length > 0 && <button onClick={onClear}>{t('clear')}</button>}</header>
       <div className="notification-list">
-        {!notifications.length && <p>No realtime alerts yet.</p>}
+        {!notifications.length && <p>{t('noRealtimeAlerts')}</p>}
         {notifications.map((item) => <article key={item.alertId}>
-          <div><strong>{item.subject || 'New alert'}</strong><span className={`priority priority--${item.priority >= 7 ? 'high' : 'normal'}`}>P{item.priority}</span></div>
+          <div><strong>{item.subject || t('newAlert')}</strong><span className={`priority priority--${item.priority >= 7 ? 'high' : 'normal'}`}>P{item.priority}</span></div>
           <p>{item.sourceSystem} · {item.status}</p>
-          <time dateTime={item.createdAt}>{formatTime(item.createdAt)}</time>
+          <time dateTime={item.createdAt}>{formatTime(item.createdAt, language)}</time>
         </article>)}
       </div>
     </section>}

@@ -25,7 +25,7 @@ export default function GatewayLogsPage() {
   }
   const updateFilter = (event) => setFilters((current) => ({ ...current, [event.target.name]: event.target.value }))
   const columns = [
-    { key: 'occurredAt', label: 'Time', render: (row) => formatDate(row.occurredAt) },
+    { key: 'occurredAt', label: t('time'), render: (row) => formatDate(row.occurredAt) },
     { key: 'routeId', label: t('route') },
     { key: 'path', label: t('endpoint'), render: (row) => `${row.method} ${row.path}` },
     { key: 'actor', label: t('actor') },
@@ -34,7 +34,7 @@ export default function GatewayLogsPage() {
     { key: 'eventId', label: '', render: (row) => <Button variant="ghost" onClick={() => inspect(row)}>{t('inspect')}</Button> },
   ]
   return <div className="page-stack">
-    <section className="page-heading"><div><p className="eyebrow">REQUEST OBSERVABILITY</p><h2>{t('gatewayLogs')}</h2><p>{t('gatewayLogsIntro')}</p></div><Badge>{logs.paging?.total ?? logs.data.length} requests</Badge></section>
+    <section className="page-heading"><div><p className="eyebrow">{t('requestObservability')}</p><h2>{t('gatewayLogs')}</h2><p>{t('gatewayLogsIntro')}</p></div><Badge>{logs.paging?.total ?? logs.data.length} {t('requests')}</Badge></section>
     <Panel title={t('requestExplorer')} actions={<Button variant="ghost" onClick={logs.reload}>{t('refresh')}</Button>}>
       <form className="filters" onSubmit={(event) => { event.preventDefault(); logs.pagination.onChange({ limit: logs.pagination.limit, offset: 0 }); setQuery({ ...filters }) }}>
         <Field label={t('route')} name="routeId" placeholder="centralized-alert" value={filters.routeId} onChange={updateFilter} />
