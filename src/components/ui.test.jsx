@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { DataTable, Status } from './ui'
+import { DataTable, Field, Status } from './ui'
 
 describe('shared UI', () => {
   it('renders reusable table data', () => { render(<DataTable columns={[{ key: 'name', label: 'Name' }]} rows={[{ id: '1', name: 'Scheduler' }]} />); expect(screen.getByRole('cell', { name: 'Scheduler' })).toBeInTheDocument() })
@@ -8,4 +8,13 @@ describe('shared UI', () => {
   it('requests a new server page with limit and offset', () => { const onChange = vi.fn(); const rows = Array.from({ length: 10 }, (_, index) => ({ id: String(index), name: `Row ${index + 1}` })); const view = within(render(<DataTable columns={[{ key: 'name', label: 'Name' }]} rows={rows} pagination={{ limit: 10, offset: 0, total: 25, options: [10, 50], onChange }} />).container); fireEvent.click(view.getByRole('button', { name: /Next/ })); expect(onChange).toHaveBeenCalledWith({ limit: 10, offset: 10 }) })
   it('renders the server total and calculated page count', () => { const rows = Array.from({ length: 10 }, (_, index) => ({ id: String(index), name: `Row ${index + 1}` })); render(<DataTable columns={[{ key: 'name', label: 'Name' }]} rows={rows} pagination={{ limit: 10, offset: 0, total: 327, onChange: vi.fn() }} />); expect(screen.getByText('Showing 1–10 of 327')).toBeInTheDocument(); expect(screen.getByText('Page 1 / 33')).toBeInTheDocument() })
   it('renders English empty state by default', () => { render(<Status empty />); expect(screen.getByText(/No data to display/)).toBeInTheDocument() })
+  it('filters and selects dropdown options', () => {
+    const onChange = vi.fn()
+    render(<Field as="select" label="Method" name="method" value="GET" options={['GET', 'POST', 'PATCH']} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('combobox', { name: 'Method' }))
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search options…' }), { target: { value: 'pat' } })
+    expect(screen.queryByRole('option', { name: 'POST' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('option', { name: 'PATCH' }))
+    expect(onChange).toHaveBeenCalledWith({ target: { name: 'method', value: 'PATCH' } })
+  })
 })

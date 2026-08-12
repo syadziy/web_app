@@ -65,6 +65,9 @@ npx vitest run src/store/permissions.test.js
 
 ## Authorization and permissions
 
+- Treat `session.tenantKey === 'superadmin'` as the only platform permission bypass. The Tenant
+  menu and `/tenants` route must additionally require this tenant key even when `tenant:view` is
+  present. Never infer platform access from username or the tenant-scoped `SUPERADMIN` role.
 - Backend dan API Gateway adalah enforcement keamanan utama. Visibility guard frontend bukan
   pengganti authorization server-side.
 - Ambil permission dari `session.permissions` pada response login.
@@ -88,8 +91,11 @@ npx vitest run src/store/permissions.test.js
   `role:assign`, dan `role:view` karena user langsung ditempelkan ke role yang dipilih.
 - Pengguna yang membuka route tanpa permission harus diarahkan ke overview, bukan melihat halaman
   yang kemudian gagal dengan 401/403.
-- Perubahan permission backend atau route gateway wajib diselaraskan dengan
-  `src/store/permissions.js`, route guard, navigation, page actions, dan focused tests.
+- Setiap menu atau action baru wajib memiliki permission granular yang disepakati sebelum
+  implementasi. Terapkan authority yang sama pada backend controller/API Gateway, katalog dan
+  migration permission User Management, `src/store/permissions.js`, sidebar/service card, direct
+  route guard, action/modal, serta loader/effect. Tambahkan focused allow/deny tests di frontend dan
+  backend; perubahan belum lengkap bila salah satu lapisan tersebut belum diperbarui.
 
 ## Authentication and session
 
@@ -169,7 +175,8 @@ npx vitest run src/store/permissions.test.js
 - Jangan menyimpulkan endpoint hanya dari action. Recipient configuration dan delivery history
   harus tetap dapat dibedakan walaupun berasal dari service yang sama.
 - Halaman Gateway Logs mengambil data dari `/api/v1/gateway-logs` melalui API Gateway dan hanya
-  tersedia bagi pengguna dengan permission `audit:read`.
+  tersedia bagi pengguna dengan permission khusus `gateway-log:read`. Permission `audit:read`
+  hanya membuka Audit Log dan tidak boleh ikut membuka Gateway Logs.
 
 ## React guidelines
 

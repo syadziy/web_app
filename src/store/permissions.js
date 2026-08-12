@@ -16,6 +16,7 @@ export const PERMISSIONS = Object.freeze({
   ALERT_MANAGE_RECIPIENTS: 'alert:manage-recipients',
   ALERT_READ_NOTIFICATIONS: 'alert:read-notifications',
   AUDIT_READ: 'audit:read',
+  GATEWAY_LOG_READ: 'gateway-log:read',
 })
 
 export const IDENTITY_PERMISSIONS = [
@@ -29,8 +30,10 @@ export const ALERT_PERMISSIONS = [
   PERMISSIONS.ALERT_MANAGE_RECIPIENTS, PERMISSIONS.ALERT_READ_NOTIFICATIONS,
 ]
 
+export const isPlatformSuperadmin = (session) => session?.tenantKey === 'superadmin'
+
 export const hasPermission = (session, permission) =>
-  Boolean(permission && session?.permissions?.includes(permission))
+  Boolean(permission && (isPlatformSuperadmin(session) || session?.permissions?.includes(permission)))
 
 export const hasAnyPermission = (session, permissions = []) =>
   permissions.some((permission) => hasPermission(session, permission))

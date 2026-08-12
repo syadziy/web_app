@@ -4,6 +4,7 @@ import { useRemoteList } from '../hooks/useRemoteList'
 import { identityApi } from '../services/api'
 import { useAuth } from '../store/AuthContext'
 import { useLanguage } from '../store/LanguageContext'
+import { isPlatformSuperadmin } from '../store/permissions'
 
 const initialForm = {
   tenantKey: '',
@@ -17,7 +18,7 @@ const initialForm = {
 export default function TenantPage() {
   const { session } = useAuth()
   const { language, t } = useLanguage()
-  const canListTenants = session?.permissions?.includes('tenant:view')
+  const canListTenants = isPlatformSuperadmin(session)
   const tenants = useRemoteList((signal, page) => canListTenants ? identityApi.tenants(page, signal) : Promise.resolve([]), canListTenants, true, { defaultLimit: 10, options: [10, 50, 100, 500] })
   const [tab, setTab] = useState(canListTenants ? 'list' : 'register')
   const [form, setForm] = useState(initialForm)

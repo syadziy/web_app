@@ -1,12 +1,53 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../store/LanguageContext'
 
 export function MaterialIcon({ name, className = '' }) { return <span className={`material-icons ${className}`} aria-hidden="true">{name}</span> }
 export function Button({ variant = 'primary', className = '', ...props }) { return <button className={`button button--${variant} ${className}`} {...props} /> }
+
+export function SearchableSelect({ id, name, value, options, onChange, disabled, required, labelId }) {
+  const { t } = useLanguage()
+  const rootRef = useRef(null)
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const normalizedOptions = options.map((option) => ({
+    value: String(option.value ?? option),
+    label: String(option.label ?? option),
+  }))
+  const selected = normalizedOptions.find((option) => option.value === String(value ?? ''))
+  const visibleOptions = normalizedOptions.filter((option) => option.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
+
+  useEffect(() => {
+    if (!open) return undefined
+    const close = (event) => { if (!rootRef.current?.contains(event.target)) setOpen(false) }
+    const escape = (event) => { if (event.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', escape)
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', escape) }
+  }, [open])
+
+  const select = (nextValue) => {
+    onChange?.({ target: { name, value: nextValue } })
+    setQuery('')
+    setOpen(false)
+  }
+
+  return <div className="searchable-select" ref={rootRef}>
+    <input type="hidden" name={name} value={value ?? ''} required={required} />
+    <button id={id} className="searchable-select__trigger" type="button" role="combobox" aria-labelledby={labelId} aria-expanded={open} aria-controls={`${id}-options`} disabled={disabled} onClick={() => setOpen((current) => !current)}>
+      <span>{selected?.label || t('selectOption')}</span><MaterialIcon name="expand_more" />
+    </button>
+    {open && <div className="searchable-select__panel" id={`${id}-options`} role="listbox">
+      <div className="searchable-select__search"><MaterialIcon name="search" /><input autoFocus type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('searchOptions')} aria-label={t('searchOptions')} /></div>
+      <div className="searchable-select__options">{visibleOptions.length ? visibleOptions.map((option) => <button type="button" role="option" aria-selected={option.value === String(value ?? '')} key={option.value} onClick={() => select(option.value)}>{option.label}{option.value === String(value ?? '') && <MaterialIcon name="check" />}</button>) : <small>{t('noMatchingOptions')}</small>}</div>
+    </div>}
+  </div>
+}
+
 export function Field({ label, hint, error, as = 'input', options = [], ...props }) {
   const id = props.id || props.name
   const Element = as
-  return <label className="field" htmlFor={id}><span>{label}</span>{as === 'select' ? <select id={id} {...props}>{options.map((option) => <option key={option.value ?? option} value={option.value ?? option}>{option.label ?? option}</option>)}</select> : <Element id={id} {...props} />}{hint && <small>{hint}</small>}{error && <small className="field__error">{error}</small>}</label>
+  if (as === 'select') return <div className="field"><span id={`${id}-label`}>{label}</span><SearchableSelect id={id} options={options} labelId={`${id}-label`} {...props} />{hint && <small>{hint}</small>}{error && <small className="field__error">{error}</small>}</div>
+  return <label className="field" htmlFor={id}><span>{label}</span><Element id={id} {...props} />{hint && <small>{hint}</small>}{error && <small className="field__error">{error}</small>}</label>
 }
 export function Panel({ title, eyebrow, actions, children, className = '' }) { return <section className={`panel ${className}`}><header className="panel__header"><div>{eyebrow && <span className="eyebrow">{eyebrow}</span>}<h2>{title}</h2></div>{actions}</header>{children}</section> }
 export function Badge({ tone = 'neutral', children }) { return <span className={`badge badge--${tone}`}>{children}</span> }

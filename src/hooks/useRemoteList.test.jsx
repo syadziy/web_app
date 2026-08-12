@@ -31,4 +31,20 @@ describe('useRemoteList pagination', () => {
 
     await waitFor(() => expect(result.current.pagination.total).toBe(327))
   })
+
+  it('returns to the last valid page when the current offset exceeds the new total', async () => {
+    const loader = vi.fn((signal, page) => Promise.resolve({
+      data: page.offset === 20 ? [] : [{ id: 'remaining' }],
+      paging: { limit: 10, offset: page.offset, total_record: 19 },
+    }))
+    const { result } = renderHook(() => useRemoteList(loader, 'items', true, {
+      defaultLimit: 10,
+      options: [10, 50],
+    }))
+
+    await waitFor(() => expect(result.current.pagination.total).toBe(19))
+    act(() => result.current.pagination.onChange({ limit: 10, offset: 20 }))
+    await waitFor(() => expect(loader).toHaveBeenLastCalledWith(expect.any(AbortSignal), { limit: 10, offset: 10 }))
+    await waitFor(() => expect(result.current.data).toEqual([{ id: 'remaining' }]))
+  })
 })
