@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAlertNotifications } from '../hooks/useAlertNotifications'
+import { MaterialIcon } from './ui'
 
 const connectionLabel = {
   connected: 'Realtime connected',
@@ -16,7 +17,7 @@ function formatTime(value) {
 export function NotificationPanel({ notifications, unread, connectionState, open, onToggle, onClear }) {
   return <div className="realtime-notifications">
     <button className="notification-trigger" onClick={onToggle} aria-label="Realtime notifications" aria-expanded={open}>
-      <span aria-hidden="true">♢</span>
+      <MaterialIcon name="notifications" />
       {unread > 0 && <strong>{unread > 99 ? '99+' : unread}</strong>}
     </button>
     {open && <section className="notification-panel" aria-label="Realtime notification list">
