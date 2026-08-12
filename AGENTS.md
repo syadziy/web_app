@@ -92,6 +92,9 @@ npx vitest run src/store/permissions.test.js
 - Jika satu workflow menjalankan beberapa endpoint, tombol hanya boleh muncul ketika semua
   permission yang diperlukan tersedia. Contoh create user saat ini membutuhkan `user:create`,
   `role:assign`, dan `role:view` karena user langsung ditempelkan ke role yang dipilih.
+- Create scheduler group membutuhkan `scheduler:manage` untuk mutation dan `scheduler:read` untuk
+  memuat pilihan task/child group. Kirim member sebagai `taskIds` dan `groupIds`, bukan object hasil
+  list; minimal satu member wajib dipilih.
 - Pengguna yang membuka route tanpa permission harus diarahkan ke overview, bukan melihat halaman
   yang kemudian gagal dengan 401/403.
 - Setiap menu atau action baru wajib memiliki permission granular yang disepakati sebelum

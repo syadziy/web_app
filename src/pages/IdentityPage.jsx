@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Badge, Button, DataTable, Field, Modal, Notice, Panel, Status, useNotice } from '../components/ui'
+import { Badge, Button, DataTable, Field, Modal, MultiSelect, Notice, Panel, Status, useNotice } from '../components/ui'
 import { useRemoteList } from '../hooks/useRemoteList'
 import { identityApi } from '../services/api'
 import { useAuth } from '../store/AuthContext'
@@ -7,26 +7,6 @@ import { useLanguage } from '../store/LanguageContext'
 import { isPlatformSuperadmin, PERMISSIONS } from '../store/permissions'
 
 const initialUser = { username: '', email: '', password: '', roleIds: [] }
-
-function MultiSelect({ label, options, selected, onChange, emptyText, selectText, searchText, noMatchesText }) {
-  const [query, setQuery] = useState('')
-  const toggle = (value, checked) => onChange(checked ? [...selected, value] : selected.filter((item) => item !== value))
-  const selectedLabels = options.filter((option) => selected.includes(option.value)).map((option) => option.label)
-  const visibleOptions = options.filter((option) => `${option.label} ${option.description || ''}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
-
-  return <label className="field multi-select-field"><span>{label}</span><details className="multi-select">
-    <summary>{selectedLabels.length ? selectedLabels.join(', ') : selectText}</summary>
-    <div className="multi-select__menu">
-      {options.length > 0 && <div className="multi-select__search"><span className="material-icons" aria-hidden="true">search</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchText} aria-label={searchText} /></div>}
-      {visibleOptions.map((option) => <label key={option.value}>
-        <input type="checkbox" checked={selected.includes(option.value)} onChange={(event) => toggle(option.value, event.target.checked)} />
-        <span><strong>{option.label}</strong>{option.description && <small>{option.description}</small>}</span>
-      </label>)}
-      {!options.length && <small>{emptyText}</small>}
-      {options.length > 0 && !visibleOptions.length && <small>{noMatchesText}</small>}
-    </div>
-  </details></label>
-}
 
 export default function IdentityPage() {
   const { session, can } = useAuth()

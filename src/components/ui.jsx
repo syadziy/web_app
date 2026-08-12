@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useLanguage } from '../store/LanguageContext'
 
 export function MaterialIcon({ name, className = '' }) { return <span className={`material-icons ${className}`} aria-hidden="true">{name}</span> }
@@ -41,6 +41,27 @@ export function SearchableSelect({ id, name, value, options, onChange, disabled,
       <div className="searchable-select__options">{visibleOptions.length ? visibleOptions.map((option) => <button type="button" role="option" aria-selected={option.value === String(value ?? '')} key={option.value} onClick={() => select(option.value)}>{option.label}{option.value === String(value ?? '') && <MaterialIcon name="check" />}</button>) : <small>{t('noMatchingOptions')}</small>}</div>
     </div>}
   </div>
+}
+
+export function MultiSelect({ label, options, selected, onChange, emptyText, selectText, searchText, noMatchesText }) {
+  const labelId = useId()
+  const [query, setQuery] = useState('')
+  const toggle = (value, checked) => onChange(checked ? [...selected, value] : selected.filter((item) => item !== value))
+  const selectedLabels = options.filter((option) => selected.includes(option.value)).map((option) => option.label)
+  const visibleOptions = options.filter((option) => `${option.label} ${option.description || ''}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
+
+  return <div className="field multi-select-field"><span id={labelId}>{label}</span><details className="multi-select">
+    <summary aria-labelledby={labelId}>{selectedLabels.length ? selectedLabels.join(', ') : selectText}</summary>
+    <div className="multi-select__menu">
+      {options.length > 0 && <div className="multi-select__search"><MaterialIcon name="search" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchText} aria-label={searchText} /></div>}
+      {visibleOptions.map((option) => <label key={option.value}>
+        <input type="checkbox" checked={selected.includes(option.value)} onChange={(event) => toggle(option.value, event.target.checked)} />
+        <span><strong>{option.label}</strong>{option.description && <small>{option.description}</small>}</span>
+      </label>)}
+      {!options.length && <small>{emptyText}</small>}
+      {options.length > 0 && !visibleOptions.length && <small>{noMatchesText}</small>}
+    </div>
+  </details></div>
 }
 
 export function Field({ label, hint, error, as = 'input', options = [], ...props }) {
