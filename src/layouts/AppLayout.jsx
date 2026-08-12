@@ -13,6 +13,7 @@ const navigation = [
   { to: '/scheduler', labelKey: 'scheduler', icon: '◷', permissions: [PERMISSIONS.SCHEDULER_READ, PERMISSIONS.SCHEDULER_MANAGE] },
   { to: '/alerts', labelKey: 'alerts', icon: '🔔', permissions: ALERT_PERMISSIONS },
   { to: '/audit', labelKey: 'auditLog', icon: '≡', permissions: [PERMISSIONS.AUDIT_READ] },
+  { to: '/gateway-logs', labelKey: 'gatewayLogs', icon: '▤', permissions: [PERMISSIONS.AUDIT_READ] },
 ]
 export default function AppLayout() {
   const { session, logout, can, canAny } = useAuth(); const location = useLocation()

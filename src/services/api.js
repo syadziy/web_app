@@ -35,3 +35,7 @@ export const auditApi = {
   list: (params, signal) => request(`/api/v1/audit-logs?${new URLSearchParams(params)}`, { signal }),
   detail: (eventId, signal) => request(`/api/v1/audit-logs/${eventId}`, { signal }),
 }
+export const gatewayLogApi = {
+  list: (params, signal) => request(`/api/v1/gateway-logs?${new URLSearchParams(params)}`, { signal }),
+  detail: (eventId, signal) => request(`/api/v1/gateway-logs/${eventId}`, { signal }),
+}
