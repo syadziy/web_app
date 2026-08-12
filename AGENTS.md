@@ -68,6 +68,9 @@ npx vitest run src/store/permissions.test.js
 - Treat `session.tenantKey === 'superadmin'` as the only platform permission bypass. The Tenant
   menu and `/tenants` route must additionally require this tenant key even when `tenant:view` is
   present. Never infer platform access from username or the tenant-scoped `SUPERADMIN` role.
+- Identity menampilkan tenant selector hanya untuk platform superadmin. Tenant yang dipilih wajib
+  menjadi `tenantId` untuk list dan mutation user, role, serta permission; tenant biasa selalu
+  memakai `session.tenantId` dan tidak boleh melihat selector tersebut.
 - Backend dan API Gateway adalah enforcement keamanan utama. Visibility guard frontend bukan
   pengganti authorization server-side.
 - Ambil permission dari `session.permissions` pada response login.
