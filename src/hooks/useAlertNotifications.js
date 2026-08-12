@@ -3,7 +3,7 @@ import { connectAlertNotifications } from '../services/notifications'
 
 const MAX_NOTIFICATIONS = 50
 
-export function useAlertNotifications(token) {
+export function useAlertNotifications(enabled) {
   const [notifications, setNotifications] = useState([])
   const [unread, setUnread] = useState(0)
   const [connectionState, setConnectionState] = useState('disconnected')
@@ -14,12 +14,11 @@ export function useAlertNotifications(token) {
     setNotifications([])
     setUnread(0)
 
-    if (!token) {
+    if (!enabled) {
       setConnectionState('disconnected')
       return undefined
     }
     return connectAlertNotifications({
-      token,
       onState: setConnectionState,
       onError: () => setConnectionState('error'),
       onNotification: (notification) => {
@@ -29,7 +28,7 @@ export function useAlertNotifications(token) {
         setUnread((value) => value + 1)
       },
     })
-  }, [token])
+  }, [enabled])
 
   return {
     notifications,

@@ -34,9 +34,9 @@ export function NotificationPanel({ notifications, unread, connectionState, open
   </div>
 }
 
-export default function RealtimeNotifications({ token }) {
+export default function RealtimeNotifications() {
   const [open, setOpen] = useState(false)
-  const realtime = useAlertNotifications(token)
+  const realtime = useAlertNotifications(true)
   const toggle = () => {
     setOpen((value) => !value)
     if (!open) realtime.markAllRead()

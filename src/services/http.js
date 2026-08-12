@@ -1,9 +1,6 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:9001').replace(/\/$/, '')
 const CLIENT_ID = import.meta.env.VITE_API_CLIENT_ID || 'operations-ui'
 
-let accessToken = ''
-export const setAccessToken = (token) => { accessToken = token || '' }
-
 export class ApiError extends Error {
   constructor(message, status, details) { super(message); this.name = 'ApiError'; this.status = status; this.details = details }
 }
@@ -13,12 +10,12 @@ export async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     signal,
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
       'X-Client-Id': CLIENT_ID,
       'X-Correlation-Id': crypto.randomUUID(),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...headers,
     },
     body: body === undefined ? undefined : JSON.stringify(body),

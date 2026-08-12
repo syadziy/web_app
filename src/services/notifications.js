@@ -4,10 +4,9 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:900
 const DEFAULT_WS_URL = `${API_BASE_URL.replace(/^http/, 'ws')}/ws/alerts`
 const ALERT_WS_URL = import.meta.env.VITE_ALERT_WS_URL || DEFAULT_WS_URL
 
-export function connectAlertNotifications({ token, onNotification, onState, onError }) {
+export function connectAlertNotifications({ onNotification, onState, onError }) {
   const client = new Client({
     brokerURL: ALERT_WS_URL,
-    connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
     reconnectDelay: 5000,
     heartbeatIncoming: 10000,
     heartbeatOutgoing: 10000,

@@ -1,6 +1,10 @@
 import { request } from './http'
 
-export const authApi = { login: (data) => request('/api/v1/auth/login', { method: 'POST', body: data }) }
+export const authApi = {
+  login: (data) => request('/api/v1/auth/login', { method: 'POST', body: data }),
+  session: () => request('/api/v1/auth/session'),
+  logout: () => request('/api/v1/auth/logout', { method: 'POST' }),
+}
 export const identityApi = {
   registerTenant: (data) => request('/api/v1/tenants', { method: 'POST', body: data }),
   tenants: (params, signal) => request(`/api/v1/tenants?${new URLSearchParams(params)}`, { signal }),

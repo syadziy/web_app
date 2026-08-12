@@ -20,7 +20,8 @@ Prioritas desain:
 
 - Permission-aware UI yang konsisten dengan enforcement backend dan API Gateway.
 - Tidak mengirim request API yang sudah diketahui tidak diizinkan.
-- Session dan access token hanya hidup selama tab aplikasi aktif.
+- Access token hanya disimpan dalam cookie `HttpOnly`; JavaScript tidak boleh membaca atau
+  menyimpan token.
 - Tampilan operasional yang responsif, mudah dipindai, dan tetap aksesibel.
 - English sebagai bahasa default dengan terjemahan Bahasa Indonesia yang konsisten.
 - Tidak membocorkan token, credential, atau data sensitif melalui UI, log, maupun build artifact.
@@ -94,13 +95,18 @@ npx vitest run src/store/permissions.test.js
 
 - Gunakan `AuthContext`; jangan membuat sumber session kedua.
 - Normalisasi response login melalui `normalizeSession`.
-- Access token diteruskan melalui wrapper `src/services/http.js`.
-- Jangan menyimpan access token ke `localStorage`, URL, log console, DOM attribute, atau error
-  message.
-- Logout harus membersihkan token HTTP client dan session React.
-- Jangan menampilkan halaman protected sebelum session tersedia.
-- WebSocket notification hanya boleh aktif untuk session dengan
-  `alert:read-notifications`.
+- Semua request REST memakai `credentials: 'include'`; API Gateway mengambil JWT dari cookie
+  `HttpOnly`. Jangan membuat kembali module-level access token atau header Bearer dari JavaScript.
+- Saat bootstrap, panggil `GET /api/v1/auth/session` sebelum route guard memutuskan redirect agar
+  refresh halaman mempertahankan login. Login hanya menyimpan metadata session di React state.
+- Logout wajib memanggil `POST /api/v1/auth/logout` untuk menghapus cookie, lalu membersihkan React
+  state walaupun request logout gagal.
+- Jangan menyimpan access token ke `localStorage`, `sessionStorage`, cookie JavaScript, URL, log
+  console, DOM attribute, atau error message.
+- Jangan menampilkan halaman protected atau form login sebelum bootstrap session selesai.
+- WebSocket notification hanya boleh aktif untuk session dengan `alert:read-notifications`.
+  Browser mengirim cookie pada handshake dan gateway me-relay JWT; jangan mengirim token pada STOMP
+  `CONNECT` dari JavaScript.
 
 ## REST and data loading
 
