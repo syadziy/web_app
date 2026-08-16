@@ -19,7 +19,9 @@ const api = vi.hoisted(() => ({
 
 vi.mock('../store/AuthContext', () => ({ useAuth: () => auth }))
 vi.mock('../store/LanguageContext', () => ({
-  useLanguage: () => ({ t: (key) => ({ manageTenant: 'Manage tenant' })[key] || key }),
+  useLanguage: () => ({
+    t: (key, params = {}) => key === 'addItem' ? `Add ${params.item}` : ({ manageTenant: 'Manage tenant' })[key] || key,
+  }),
 }))
 vi.mock('../services/api', () => ({ identityApi: api }))
 
@@ -79,5 +81,16 @@ describe('IdentityPage tenant selection', () => {
     await waitFor(() => expect(api.users).toHaveBeenCalled())
     expect(screen.queryByRole('combobox', { name: 'Manage tenant' })).not.toBeInTheDocument()
     expect(api.tenants).not.toHaveBeenCalled()
+  })
+
+  it('does not expose global permission creation to a regular tenant', async () => {
+    auth.session = { tenantId: 'acme-id', tenantKey: 'acme' }
+
+    render(<IdentityPage />)
+
+    await waitFor(() => expect(api.permissions).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('tab', { name: 'permissions' }))
+
+    expect(screen.queryByRole('button', { name: /add permission/i })).not.toBeInTheDocument()
   })
 })

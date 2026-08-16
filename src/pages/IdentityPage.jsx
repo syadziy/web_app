@@ -31,8 +31,8 @@ export default function IdentityPage() {
   const visibleTabs = useMemo(() => [
     (canViewUsers || can(PERMISSIONS.USER_CREATE)) && 'users',
     (canViewRoles || can(PERMISSIONS.ROLE_CREATE) || can(PERMISSIONS.ROLE_EDIT)) && 'roles',
-    (canViewPermissions || can(PERMISSIONS.PERMISSION_CREATE)) && 'permissions',
-  ].filter(Boolean), [canViewPermissions, canViewRoles, canViewUsers, can])
+    (canViewPermissions || (platformSuperadmin && can(PERMISSIONS.PERMISSION_CREATE))) && 'permissions',
+  ].filter(Boolean), [canViewPermissions, canViewRoles, canViewUsers, can, platformSuperadmin])
   const [tab, setTab] = useState(visibleTabs[0])
   const roleChoices = useRemoteList((signal) => identityApi.roles(tenantId, { limit: 500, offset: 0 }, signal), tenantId, modal && tab === 'users' && canViewRoles)
   const permissionChoices = useRemoteList((signal) => identityApi.permissions(tenantId, { limit: 500, offset: 0 }, signal), tenantId, modal && tab === 'roles' && canViewPermissions)
@@ -56,7 +56,7 @@ export default function IdentityPage() {
   const current = configs[tab]
   const canCreate = tab === 'users'
     ? can(PERMISSIONS.USER_CREATE) && can(PERMISSIONS.ROLE_ASSIGN) && canViewRoles
-    : tab === 'roles' ? can(PERMISSIONS.ROLE_CREATE) : can(PERMISSIONS.PERMISSION_CREATE)
+    : tab === 'roles' ? can(PERMISSIONS.ROLE_CREATE) : platformSuperadmin && can(PERMISSIONS.PERMISSION_CREATE)
   const openCreate = () => { setForm(current.initial); setModal(true) }
   const selectTenant = (event) => {
     const nextTenantId = event.target.value
